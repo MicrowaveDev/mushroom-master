@@ -12,11 +12,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   alphaStats,
-  bufferSha256,
   encodeDeterministicPng,
   fileSha256,
   readPngRgba
 } from '../lib/bitmap-image-toolkit.js';
+import {
+  createRaster,
+  cropRaster,
+  fillRaster,
+  paintCheckerboard as paintRasterCheckerboard
+} from '@microwavedev/backpack-game-core/tooling/raster';
+import { writeEvidenceBundle } from '@microwavedev/backpack-game-core/tooling/evidence';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -43,10 +49,6 @@ function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
-function ensureDir(p) {
-  fs.mkdirSync(p, { recursive: true });
-}
-
 function parseIds(argv) {
   const arg = argv.find((item) => item.startsWith('--ids='));
   if (!arg) return null;
@@ -54,37 +56,18 @@ function parseIds(argv) {
 }
 
 function makeCanvas(width, height, fill = DARK) {
-  const rgba = Buffer.alloc(width * height * 4);
-  for (let i = 0; i < width * height; i += 1) {
-    rgba[i * 4 + 0] = fill[0];
-    rgba[i * 4 + 1] = fill[1];
-    rgba[i * 4 + 2] = fill[2];
-    rgba[i * 4 + 3] = fill[3];
-  }
-  return { width, height, rgba };
+  return createRaster(width, height, fill);
 }
 
 function fillRect(canvas, x, y, w, h, color) {
-  for (let yy = y; yy < y + h; yy += 1) {
-    if (yy < 0 || yy >= canvas.height) continue;
-    for (let xx = x; xx < x + w; xx += 1) {
-      if (xx < 0 || xx >= canvas.width) continue;
-      const i = (yy * canvas.width + xx) * 4;
-      canvas.rgba[i + 0] = color[0];
-      canvas.rgba[i + 1] = color[1];
-      canvas.rgba[i + 2] = color[2];
-      canvas.rgba[i + 3] = color[3];
-    }
-  }
+  fillRaster(canvas, color, { x, y, width: w, height: h });
 }
 
 function paintChecker(canvas, x, y, w, h, size = 16) {
-  for (let yy = 0; yy < h; yy += size) {
-    for (let xx = 0; xx < w; xx += size) {
-      const odd = ((Math.floor(xx / size) + Math.floor(yy / size)) & 1) === 1;
-      fillRect(canvas, x + xx, y + yy, Math.min(size, w - xx), Math.min(size, h - yy), odd ? CHECK_B : CHECK_A);
-    }
-  }
+  paintRasterCheckerboard(canvas, { x, y, width: w, height: h }, {
+    size,
+    colors: [CHECK_A, CHECK_B]
+  });
 }
 
 function blit(canvas, image, dstX, dstY, mode) {
@@ -119,13 +102,7 @@ function blit(canvas, image, dstX, dstY, mode) {
 }
 
 function cropImage(image, rect) {
-  const rgba = Buffer.alloc(rect.width * rect.height * 4);
-  for (let y = 0; y < rect.height; y += 1) {
-    const srcStart = ((rect.y + y) * image.width + rect.x) * 4;
-    const dstStart = y * rect.width * 4;
-    image.rgba.copy(rgba, dstStart, srcStart, srcStart + rect.width * 4);
-  }
-  return { width: rect.width, height: rect.height, rgba };
+  return cropRaster(image, rect);
 }
 
 function reviewImageForAsset(asset, image) {
@@ -139,7 +116,6 @@ function reviewImageForAsset(asset, image) {
 }
 
 function main() {
-  ensureDir(reviewDir);
   const ids = parseIds(process.argv.slice(2));
   const assetsDoc = loadJson(assetsPath);
   const assets = [
@@ -200,14 +176,17 @@ function main() {
   });
 
   const buf = encodeDeterministicPng(canvas);
-  fs.writeFileSync(outPng, buf);
-  fs.writeFileSync(outManifest, JSON.stringify({
-    schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
-    sourceRoot: path.relative(repoRoot, assetRoot) || '.',
-    outputHash: bufferSha256(buf),
-    entries
-  }, null, 2));
+  writeEvidenceBundle({
+    outputPath: outPng,
+    outputBuffer: buf,
+    manifestPath: outManifest,
+    root: repoRoot,
+    manifest: {
+      schemaVersion: 1,
+      sourceRoot: path.relative(repoRoot, assetRoot) || '.',
+      entries
+    }
+  });
   console.log(`home-field alpha/halo sheet: ${assets.length} asset(s) -> ${path.relative(repoRoot, outPng)}`);
 }
 

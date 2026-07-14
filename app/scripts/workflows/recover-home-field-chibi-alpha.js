@@ -3,7 +3,7 @@
  * Try bounded chroma-key tolerances for the Thalla grouped state sheet.
  */
 
-import { spawnSync } from 'node:child_process';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { repoRoot } from '../../shared/repo-root.js';
 
 const supportedIds = new Set(['thalla']);
@@ -46,10 +46,11 @@ function parseTolerances(argv) {
 function run(label, command, args, env = process.env) {
   console.log(`\n# ${label}`);
   console.log(`${command} ${args.join(' ')}`);
-  const result = spawnSync(command, args, {
+  const result = runChildProcessSync(command, args, {
     cwd: repoRoot,
     env,
-    stdio: 'inherit'
+    stdio: 'inherit',
+    allowFailure: true
   });
   return result.status === 0;
 }

@@ -29,6 +29,11 @@ import {
   readPngRgba,
   alphaStats
 } from '../lib/bitmap-image-toolkit.js';
+import {
+  cropRaster,
+  resizeRasterHybrid,
+  resizeRasterNearest
+} from '@microwavedev/backpack-game-core/tooling/raster';
 import { validateAssets } from '../../shared/home-field/home-field-validator.js';
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -118,55 +123,9 @@ function printUsage(stream = console.error) {
 }
 
 function resizeRgba(srcImage, dstWidth, dstHeight, mode) {
-  const { width: sw, height: sh, rgba: src } = srcImage;
-  const dst = Buffer.alloc(dstWidth * dstHeight * 4);
-  const xRatio = sw / dstWidth;
-  const yRatio = sh / dstHeight;
-  if (mode === 'nearest') {
-    for (let y = 0; y < dstHeight; y += 1) {
-      const sy = Math.min(sh - 1, Math.floor(y * yRatio));
-      for (let x = 0; x < dstWidth; x += 1) {
-        const sx = Math.min(sw - 1, Math.floor(x * xRatio));
-        const si = (sy * sw + sx) * 4;
-        const di = (y * dstWidth + x) * 4;
-        dst[di + 0] = src[si + 0];
-        dst[di + 1] = src[si + 1];
-        dst[di + 2] = src[si + 2];
-        dst[di + 3] = src[si + 3];
-      }
-    }
-    return { width: dstWidth, height: dstHeight, rgba: dst };
-  }
-  // Box-average downscale (cheap "lanczos-like" for downscaling). For upscaling fall
-  // back to nearest to keep this dependency-free; we shouldn't need to upscale.
-  if (sw < dstWidth || sh < dstHeight) {
-    return resizeRgba(srcImage, dstWidth, dstHeight, 'nearest');
-  }
-  for (let y = 0; y < dstHeight; y += 1) {
-    const sy0 = Math.floor(y * yRatio);
-    const sy1 = Math.min(sh, Math.ceil((y + 1) * yRatio));
-    for (let x = 0; x < dstWidth; x += 1) {
-      const sx0 = Math.floor(x * xRatio);
-      const sx1 = Math.min(sw, Math.ceil((x + 1) * xRatio));
-      let r = 0, g = 0, b = 0, a = 0, n = 0;
-      for (let yy = sy0; yy < sy1; yy += 1) {
-        for (let xx = sx0; xx < sx1; xx += 1) {
-          const si = (yy * sw + xx) * 4;
-          r += src[si + 0];
-          g += src[si + 1];
-          b += src[si + 2];
-          a += src[si + 3];
-          n += 1;
-        }
-      }
-      const di = (y * dstWidth + x) * 4;
-      dst[di + 0] = Math.round(r / n);
-      dst[di + 1] = Math.round(g / n);
-      dst[di + 2] = Math.round(b / n);
-      dst[di + 3] = Math.round(a / n);
-    }
-  }
-  return { width: dstWidth, height: dstHeight, rgba: dst };
+  return mode === 'nearest'
+    ? resizeRasterNearest(srcImage, dstWidth, dstHeight)
+    : resizeRasterHybrid(srcImage, dstWidth, dstHeight);
 }
 
 function cropCenterRgba(srcImage, ratio) {
@@ -174,13 +133,7 @@ function cropCenterRgba(srcImage, ratio) {
   const cropSize = Math.max(1, Math.floor(Math.min(srcImage.width, srcImage.height) * ratio));
   const startX = Math.floor((srcImage.width - cropSize) / 2);
   const startY = Math.floor((srcImage.height - cropSize) / 2);
-  const rgba = Buffer.alloc(cropSize * cropSize * 4);
-  for (let y = 0; y < cropSize; y += 1) {
-    const srcOff = ((startY + y) * srcImage.width + startX) * 4;
-    const dstOff = y * cropSize * 4;
-    srcImage.rgba.copy(rgba, dstOff, srcOff, srcOff + cropSize * 4);
-  }
-  return { width: cropSize, height: cropSize, rgba };
+  return cropRaster(srcImage, { x: startX, y: startY, width: cropSize, height: cropSize });
 }
 
 function smootherstep(t) {

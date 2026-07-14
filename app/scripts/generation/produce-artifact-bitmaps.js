@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { artifacts } from '../../server/game-data.js';
 import { repoRoot } from '../../shared/repo-root.js';
 import {
@@ -61,9 +61,10 @@ function sourceFor(id) {
 }
 
 function run(command, args) {
-  const result = spawnSync(command, args, { stdio: 'inherit' });
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+  try {
+    runChildProcessSync(command, args, { stdio: 'inherit' });
+  } catch (error) {
+    process.exit(error.result?.code ?? 1);
   }
 }
 

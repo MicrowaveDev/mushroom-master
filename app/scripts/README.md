@@ -134,7 +134,10 @@ npm run game:home-field:preview -- --scope=combined
 `placeholder-tiles` writes visibly marked, non-production files only under
 `.agent/home-field-workspace/raw`. Review helpers (`sheet`, `alpha-sheet`,
 `mobile-readability-sheet`, `grass-family-sheet`, `adjacency`, and
-`candidate-evidence`) write temporary evidence. Validate readiness with:
+`candidate-evidence`) write temporary evidence. The five raster review sheets
+use the shared core raster engine and atomically write sibling manifests with
+output/input hashes plus `manifestSha256`; Mushroom still owns their layouts,
+asset selection, colors, and approval policy. Validate readiness with:
 
 ```bash
 npm run game:home-field:validate -- --profile=minimal-production

@@ -1006,7 +1006,7 @@ Implementation evidence:
 
 ### Phase 8BF - Shared Raster, Spritesheet, And Evidence Primitives
 
-Status: **Planned from the 2026-07-14 post-8BE script audit.** Phase 8BE's
+Status: **Completed on 2026-07-14 on core `93e54ad`.** Phase 8BE's
 statement that Home Field scripts stay local was directionally correct for art
 direction and workflow ownership, but too broad for their implementation
 mechanics. The remaining Mushroom script tree contains repeated product-neutral
@@ -1014,6 +1014,24 @@ RGBA operations, spritesheet transforms, pixel analysis, and evidence writing.
 Those mechanics should move behind small core APIs while the scripts remain
 thin Mushroom-configured entry points. Hosted Telegram/web remains the first
 production target; desktop/offline packaging does not block this phase.
+
+Implementation evidence:
+
+- Core now exports `tooling/raster`, `tooling/image-analysis`, and
+  `tooling/evidence`; `tooling/image-review` supports raster evidence and
+  `tooling/runners` supports injected synchronous commands.
+- Mushroom's five Home Field raster sheets, spritesheet split/stage, family and
+  general producers, reference proof, and Home Field validator execute the
+  shared raster/analysis APIs. All five pre/post migration PNG hashes are
+  byte-identical.
+- Repeated bounded generated-image discovery now lives in one Mushroom-local
+  helper because Codex/OpenAI temp-root policy remains product workflow state.
+- Meat's real `game:assets:sheet` pipeline executes core raster code and writes
+  a sibling evidence manifest binding all 12 declared sources, every present
+  candidate, the production catalog, and the unchanged review PNG hash.
+- Core tests/package dry-run, Mushroom's Home Field pipeline and script-doc
+  gate, Meat's script tooling/sheet/docs gates, and the final cross-consumer
+  verification are the completion gates for the pinned SHA.
 
 #### Post-Extraction Findings
 
@@ -1071,37 +1089,37 @@ production target; desktop/offline packaging does not block this phase.
 
 #### Ordered Implementation
 
-1. **8BF-A - Freeze compatibility.** Add fixture images and golden output
+1. **Completed 2026-07-14: 8BF-A - Freeze compatibility.** Add fixture images and golden output
    hashes for all five Home Field raster sheets, chibi split/stage, static and
    animated production, and the affected validators. Record current CLI exit
    codes and manifest schemas before moving functions.
-2. **8BF-B - Consolidate before promotion.** Move the duplicated functions with
+2. **Completed 2026-07-14: 8BF-B - Consolidate before promotion.** Move the duplicated functions with
    mechanical file moves into one tested Mushroom-local raster module first.
    Replace every local copy and prove byte-identical outputs. This prevents a
    premature core API from preserving inconsistent behavior.
-3. **8BF-C - Promote neutral raster APIs.** Move the stabilized canvas, crop,
+3. **Completed 2026-07-14: 8BF-C - Promote neutral raster APIs.** Move the stabilized canvas, crop,
    nearest-neighbor resize, source-over composite, tile, frame-grid, chroma-key,
    alpha-trim, and padding functions to `core/tooling/raster`, with named image
    and rectangle types and explicit bounds/overflow checks.
-4. **8BF-D - Extract image analysis.** Move product-neutral frame and pixel
+4. **Completed 2026-07-14: 8BF-D - Extract image analysis.** Move product-neutral frame and pixel
    metrics to `core/tooling/image-analysis`; rewrite Mushroom validators as
    policy adapters that supply regions, thresholds, and domain-specific issue
    messages.
-5. **8BF-E - Unify evidence lifecycle.** Extend core provenance/evidence and
+5. **Completed 2026-07-14: 8BF-E - Unify evidence lifecycle.** Extend core provenance/evidence and
    raster review orchestration so generated PNGs and JSON evidence are written
    deterministically, bind all inputs and outputs by hash, reject stale
    evidence, and support injected roots/clocks. Migrate the five Home Field
    review generators and candidate evidence without changing public commands.
-6. **8BF-F - Reuse existing process contracts.** Route duplicated production
+6. **Completed 2026-07-14: 8BF-F - Reuse existing process contracts.** Route duplicated production
    and proof command execution through hardened `tooling/runners` or
    `tooling/release`. Convert straightforward scripts to `util.parseArgs` and
    consolidate generated-image discovery locally.
-7. **8BF-G - Prove a real second consumer.** Make Meat execute the promoted
+7. **Completed 2026-07-14: 8BF-G - Prove a real second consumer.** Make Meat execute the promoted
    raster/evidence APIs in its production-art review pipeline and emit a hashed
    review manifest, not merely import the modules. Keep a primitive local until
    that second execution exists unless it eliminates several independently
    tested Mushroom copies and is intentionally marked provisional.
-8. **8BF-H - Remove obsolete code and stabilize.** Delete superseded local
+8. **Completed 2026-07-14: 8BF-H - Remove obsolete code and stabilize.** Delete superseded local
    implementations, document every public subpath, update both script guides
    and manifests, and run core packaging/types/tests plus both products' script
    documentation, asset, test, build, and hosted smoke gates on one core SHA.

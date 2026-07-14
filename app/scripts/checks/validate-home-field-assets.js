@@ -25,11 +25,20 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { validateAll, validateTileConnectors } from '../../shared/home-field/home-field-validator.js';
 import { buildHomeFieldStatus, formatHomeFieldStatus } from '../../shared/home-field/home-field-status.js';
 import { alphaStats, readPngHeader, readPngRgba } from '../lib/bitmap-image-toolkit.js';
+import {
+  alphaBounds as coreAlphaBounds,
+  averageEdgeRgb as coreAverageEdgeRgb,
+  averageRegionRgb,
+  connectedComponents,
+  frameDifference,
+  frameHash as coreFrameHash,
+  luminance,
+  rgbDistance
+} from '@microwavedev/backpack-game-core/tooling/image-analysis';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -275,32 +284,22 @@ function checkRuntimeReadiness(assetsDoc, errors, {
 }
 
 function frameHash(image, frameWidth, frameHeight, row, col) {
-  const hash = crypto.createHash('sha256');
-  for (let y = 0; y < frameHeight; y += 1) {
-    const start = ((row * frameHeight + y) * image.width + (col * frameWidth)) * 4;
-    hash.update(image.rgba.subarray(start, start + (frameWidth * 4)));
-  }
-  return hash.digest('hex');
+  return coreFrameHash(image, {
+    x: col * frameWidth,
+    y: row * frameHeight,
+    width: frameWidth,
+    height: frameHeight
+  });
 }
 
 function frameDifferencePixels(image, frameWidth, frameHeight, rowA, colA, rowB, colB) {
-  let changed = 0;
-  for (let y = 0; y < frameHeight; y += 1) {
-    for (let x = 0; x < frameWidth; x += 1) {
-      const a = ((rowA * frameHeight + y) * image.width + (colA * frameWidth + x)) * 4;
-      const b = ((rowB * frameHeight + y) * image.width + (colB * frameWidth + x)) * 4;
-      const alphaDelta = Math.abs(image.rgba[a + 3] - image.rgba[b + 3]);
-      const colorDelta = (
-        Math.abs(image.rgba[a + 0] - image.rgba[b + 0]) +
-        Math.abs(image.rgba[a + 1] - image.rgba[b + 1]) +
-        Math.abs(image.rgba[a + 2] - image.rgba[b + 2])
-      );
-      if (alphaDelta > 24 || (image.rgba[a + 3] > 32 && image.rgba[b + 3] > 32 && colorDelta > 48)) {
-        changed += 1;
-      }
-    }
-  }
-  return changed;
+  return frameDifference(image, image, {
+    firstRect: { x: colA * frameWidth, y: rowA * frameHeight, width: frameWidth, height: frameHeight },
+    secondRect: { x: colB * frameWidth, y: rowB * frameHeight, width: frameWidth, height: frameHeight },
+    alphaThreshold: 24,
+    colorThreshold: 48,
+    visibleAlphaThreshold: 32
+  }).differentPixels;
 }
 
 function meaningfullyUniqueFrameCount(image, frameWidth, frameHeight, frames, minDifferentPixels = 28) {
@@ -365,92 +364,43 @@ function frameStats(image, frameWidth, frameHeight, row, col) {
 }
 
 function frameAlphaBounds(image, frameWidth, frameHeight, row, col) {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  let visiblePixels = 0;
-
-  for (let y = 0; y < frameHeight; y += 1) {
-    for (let x = 0; x < frameWidth; x += 1) {
-      const offset = ((row * frameHeight + y) * image.width + (col * frameWidth + x)) * 4;
-      if (image.rgba[offset + 3] <= 32) continue;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-      visiblePixels += 1;
-    }
-  }
-
-  if (visiblePixels === 0) {
+  const originX = col * frameWidth;
+  const originY = row * frameHeight;
+  const bounds = coreAlphaBounds(image, {
+    rect: { x: originX, y: originY, width: frameWidth, height: frameHeight },
+    threshold: 32
+  });
+  if (!bounds) {
     return { visiblePixels: 0, width: 0, height: 0, centerY: 0, minX: 0, maxX: 0, minY: 0, maxY: 0 };
   }
-
   return {
-    visiblePixels,
-    width: maxX - minX + 1,
-    height: maxY - minY + 1,
-    centerY: (minY + maxY) / 2,
-    minX,
-    maxX,
-    minY,
-    maxY
+    visiblePixels: bounds.visiblePixels,
+    width: bounds.width,
+    height: bounds.height,
+    centerY: bounds.centerY - originY,
+    minX: bounds.minX - originX,
+    maxX: bounds.maxX - originX,
+    minY: bounds.minY - originY,
+    maxY: bounds.maxY - originY
   };
 }
 
 function frameVisibleComponents(image, frameWidth, frameHeight, row, col) {
-  const visited = new Uint8Array(frameWidth * frameHeight);
-  const components = [];
-  const visibleAt = (x, y) => {
-    const offset = ((row * frameHeight + y) * image.width + (col * frameWidth + x)) * 4;
-    return image.rgba[offset + 3] > 32;
-  };
-
-  for (let y = 0; y < frameHeight; y += 1) {
-    for (let x = 0; x < frameWidth; x += 1) {
-      const start = y * frameWidth + x;
-      if (visited[start] || !visibleAt(x, y)) continue;
-      const stack = [start];
-      visited[start] = 1;
-      let pixels = 0;
-      let minX = x;
-      let maxX = x;
-      let minY = y;
-      let maxY = y;
-
-      while (stack.length) {
-        const current = stack.pop();
-        const cx = current % frameWidth;
-        const cy = Math.floor(current / frameWidth);
-        pixels += 1;
-        minX = Math.min(minX, cx);
-        maxX = Math.max(maxX, cx);
-        minY = Math.min(minY, cy);
-        maxY = Math.max(maxY, cy);
-        for (const [nx, ny] of [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]]) {
-          if (nx < 0 || ny < 0 || nx >= frameWidth || ny >= frameHeight) continue;
-          const next = ny * frameWidth + nx;
-          if (visited[next] || !visibleAt(nx, ny)) continue;
-          visited[next] = 1;
-          stack.push(next);
-        }
-      }
-
-      components.push({
-        pixels,
-        minX,
-        maxX,
-        minY,
-        maxY,
-        width: maxX - minX + 1,
-        height: maxY - minY + 1,
-        touchesFrameEdge: minX === 0 || minY === 0 || maxX === frameWidth - 1 || maxY === frameHeight - 1
-      });
-    }
-  }
-
-  return components.sort((a, b) => b.pixels - a.pixels);
+  const originX = col * frameWidth;
+  const originY = row * frameHeight;
+  return connectedComponents(image, {
+    rect: { x: originX, y: originY, width: frameWidth, height: frameHeight },
+    threshold: 32
+  }).map((component) => ({
+    pixels: component.pixels,
+    minX: component.minX - originX,
+    maxX: component.maxX - originX,
+    minY: component.minY - originY,
+    maxY: component.maxY - originY,
+    width: component.width,
+    height: component.height,
+    touchesFrameEdge: component.touchesRectEdge
+  }));
 }
 
 function detachedFrameMarkComponents(image, frameWidth, frameHeight, row, col) {
@@ -672,59 +622,12 @@ function terrainLayer(mapDoc) {
 }
 
 function averageEdgeRgb(image, side, band = null, thickness = 6) {
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let count = 0;
-  const xRange = side === 'w'
-    ? [0, thickness]
-    : side === 'e'
-      ? [image.width - thickness, image.width]
-      : [band?.start ?? 0, band?.end ?? image.width];
-  const yRange = side === 'n'
-    ? [0, thickness]
-    : side === 's'
-      ? [image.height - thickness, image.height]
-      : [band?.start ?? 0, band?.end ?? image.height];
-  for (let y = Math.max(0, yRange[0]); y < Math.min(image.height, yRange[1]); y += 1) {
-    for (let x = Math.max(0, xRange[0]); x < Math.min(image.width, xRange[1]); x += 1) {
-      const i = (y * image.width + x) * 4;
-      r += image.rgba[i + 0];
-      g += image.rgba[i + 1];
-      b += image.rgba[i + 2];
-      count += 1;
-    }
-  }
-  return count ? [r / count, g / count, b / count] : [0, 0, 0];
-}
-
-function rgbDistance(a, b) {
-  return Math.sqrt(((a[0] - b[0]) ** 2) + ((a[1] - b[1]) ** 2) + ((a[2] - b[2]) ** 2));
+  const sideNames = { n: 'top', e: 'right', s: 'bottom', w: 'left' };
+  return coreAverageEdgeRgb(image, sideNames[side], { band, thickness });
 }
 
 function averageRgb(image, region = null) {
-  const x0 = region?.x ?? 0;
-  const y0 = region?.y ?? 0;
-  const x1 = Math.min(image.width, x0 + (region?.width ?? image.width));
-  const y1 = Math.min(image.height, y0 + (region?.height ?? image.height));
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let count = 0;
-  for (let y = Math.max(0, y0); y < y1; y += 1) {
-    for (let x = Math.max(0, x0); x < x1; x += 1) {
-      const i = (y * image.width + x) * 4;
-      r += image.rgba[i + 0];
-      g += image.rgba[i + 1];
-      b += image.rgba[i + 2];
-      count += 1;
-    }
-  }
-  return count ? [r / count, g / count, b / count] : [0, 0, 0];
-}
-
-function luminance(rgb) {
-  return (rgb[0] * 0.2126) + (rgb[1] * 0.7152) + (rgb[2] * 0.0722);
+  return averageRegionRgb(image, region || undefined);
 }
 
 function checkTerrainFamilyCohesion(assetsDoc, errors, { ids = null } = {}) {

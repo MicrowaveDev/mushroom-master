@@ -12,9 +12,15 @@ import { fileURLToPath } from 'node:url';
 import {
   encodeDeterministicPng,
   readPngRgba,
-  fileSha256,
-  bufferSha256
+  fileSha256
 } from '../lib/bitmap-image-toolkit.js';
+import {
+  compositeRaster,
+  createRaster,
+  paintCheckerboard as paintRasterCheckerboard,
+  resizeRasterNearest
+} from '@microwavedev/backpack-game-core/tooling/raster';
+import { writeEvidenceBundle } from '@microwavedev/backpack-game-core/tooling/evidence';
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), '..', '..', '..');
@@ -37,59 +43,23 @@ const PATTERNS = [
   ['grass_base_01', 'grass_base_02', 'grass_flowers_01', 'grass_base_02', 'grass_base_01']
 ];
 
-function ensureDir(p) {
-  fs.mkdirSync(p, { recursive: true });
-}
-
 function makeCanvas(width, height, fill) {
-  const rgba = Buffer.alloc(width * height * 4);
-  for (let i = 0; i < width * height; i += 1) {
-    rgba[i * 4 + 0] = fill[0];
-    rgba[i * 4 + 1] = fill[1];
-    rgba[i * 4 + 2] = fill[2];
-    rgba[i * 4 + 3] = fill[3];
-  }
-  return { width, height, rgba };
-}
-
-function fillRect(canvas, x, y, w, h, color) {
-  for (let yy = y; yy < y + h; yy += 1) {
-    if (yy < 0 || yy >= canvas.height) continue;
-    for (let xx = x; xx < x + w; xx += 1) {
-      if (xx < 0 || xx >= canvas.width) continue;
-      const i = (yy * canvas.width + xx) * 4;
-      canvas.rgba[i + 0] = color[0];
-      canvas.rgba[i + 1] = color[1];
-      canvas.rgba[i + 2] = color[2];
-      canvas.rgba[i + 3] = color[3];
-    }
-  }
+  return createRaster(width, height, fill);
 }
 
 function paintCheckerboard(canvas, x, y, w, h, size = 12) {
-  for (let yy = 0; yy < h; yy += size) {
-    for (let xx = 0; xx < w; xx += size) {
-      const odd = ((Math.floor(xx / size) + Math.floor(yy / size)) & 1) === 1;
-      fillRect(canvas, x + xx, y + yy, Math.min(size, w - xx), Math.min(size, h - yy), odd ? CHECKER_A : CHECKER_B);
-    }
-  }
+  paintRasterCheckerboard(canvas, { x, y, width: w, height: h }, {
+    size,
+    colors: [CHECKER_B, CHECKER_A]
+  });
 }
 
 function blit(canvas, image, dstX, dstY, dstW = TILE, dstH = TILE) {
-  const xScale = image.width / dstW;
-  const yScale = image.height / dstH;
-  for (let yy = 0; yy < dstH; yy += 1) {
-    const sy = Math.min(image.height - 1, Math.floor(yy * yScale));
-    for (let xx = 0; xx < dstW; xx += 1) {
-      const sx = Math.min(image.width - 1, Math.floor(xx * xScale));
-      const si = (sy * image.width + sx) * 4;
-      const di = ((dstY + yy) * canvas.width + (dstX + xx)) * 4;
-      canvas.rgba[di + 0] = image.rgba[si + 0];
-      canvas.rgba[di + 1] = image.rgba[si + 1];
-      canvas.rgba[di + 2] = image.rgba[si + 2];
-      canvas.rgba[di + 3] = image.rgba[si + 3];
-    }
-  }
+  compositeRaster(canvas, resizeRasterNearest(image, dstW, dstH), {
+    x: dstX,
+    y: dstY,
+    mode: 'copy'
+  });
 }
 
 function drawTile(canvas, images, id, x, y) {
@@ -114,7 +84,6 @@ function drawPattern(canvas, images, pattern, x, y) {
 }
 
 function main() {
-  ensureDir(reviewDir);
   const images = new Map();
   const entries = [];
   for (const id of IDS) {
@@ -143,20 +112,22 @@ function main() {
   });
 
   const buf = encodeDeterministicPng(canvas);
-  fs.writeFileSync(outPng, buf);
-  fs.writeFileSync(outManifest, `${JSON.stringify({
-    schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
-    status: 'preview',
-    sourceRoot: path.relative(repoRoot, assetRoot) || '.',
-    output: path.relative(repoRoot, outPng),
-    outputHash: bufferSha256(buf),
-    proof: {
-      repeatBlocks: IDS,
-      mixedPatterns: PATTERNS
-    },
-    entries
-  }, null, 2)}\n`);
+  writeEvidenceBundle({
+    outputPath: outPng,
+    outputBuffer: buf,
+    manifestPath: outManifest,
+    root: repoRoot,
+    manifest: {
+      schemaVersion: 1,
+      status: 'preview',
+      sourceRoot: path.relative(repoRoot, assetRoot) || '.',
+      proof: {
+        repeatBlocks: IDS,
+        mixedPatterns: PATTERNS
+      },
+      entries
+    }
+  });
   console.log(`home-field grass-family sheet: ${path.relative(repoRoot, outPng)}`);
 }
 

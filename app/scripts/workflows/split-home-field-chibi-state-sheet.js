@@ -14,6 +14,11 @@ import {
   encodeDeterministicPng,
   readPngAsRgba
 } from '../lib/bitmap-image-toolkit.js';
+import {
+  chromaKeyRaster,
+  cropRaster,
+  resizeRasterHybrid
+} from '@microwavedev/backpack-game-core/tooling/raster';
 
 const DEFAULT_SOURCE = '.agent/home-field-workspace/raw/thalla_chibi.states.source.png';
 const DEFAULT_OUTPUT_DIR = '.agent/home-field-workspace/raw';
@@ -46,76 +51,20 @@ function parseHexColor(value) {
 }
 
 function resizeFrame(srcImage, dstWidth, dstHeight) {
-  const dst = Buffer.alloc(dstWidth * dstHeight * 4);
-  const xRatio = srcImage.width / dstWidth;
-  const yRatio = srcImage.height / dstHeight;
-  if (srcImage.width < dstWidth || srcImage.height < dstHeight) {
-    for (let y = 0; y < dstHeight; y += 1) {
-      const sy = Math.min(srcImage.height - 1, Math.floor(y * yRatio));
-      for (let x = 0; x < dstWidth; x += 1) {
-        const sx = Math.min(srcImage.width - 1, Math.floor(x * xRatio));
-        const srcOff = (sy * srcImage.width + sx) * 4;
-        const dstOff = (y * dstWidth + x) * 4;
-        srcImage.rgba.copy(dst, dstOff, srcOff, srcOff + 4);
-      }
-    }
-    return { width: dstWidth, height: dstHeight, rgba: dst };
-  }
-
-  for (let y = 0; y < dstHeight; y += 1) {
-    const sy0 = Math.floor(y * yRatio);
-    const sy1 = Math.min(srcImage.height, Math.ceil((y + 1) * yRatio));
-    for (let x = 0; x < dstWidth; x += 1) {
-      const sx0 = Math.floor(x * xRatio);
-      const sx1 = Math.min(srcImage.width, Math.ceil((x + 1) * xRatio));
-      let r = 0;
-      let g = 0;
-      let b = 0;
-      let a = 0;
-      let n = 0;
-      for (let yy = sy0; yy < sy1; yy += 1) {
-        for (let xx = sx0; xx < sx1; xx += 1) {
-          const srcOff = (yy * srcImage.width + xx) * 4;
-          r += srcImage.rgba[srcOff + 0];
-          g += srcImage.rgba[srcOff + 1];
-          b += srcImage.rgba[srcOff + 2];
-          a += srcImage.rgba[srcOff + 3];
-          n += 1;
-        }
-      }
-      const dstOff = (y * dstWidth + x) * 4;
-      dst[dstOff + 0] = Math.round(r / n);
-      dst[dstOff + 1] = Math.round(g / n);
-      dst[dstOff + 2] = Math.round(b / n);
-      dst[dstOff + 3] = Math.round(a / n);
-    }
-  }
-  return { width: dstWidth, height: dstHeight, rgba: dst };
+  return resizeRasterHybrid(srcImage, dstWidth, dstHeight);
 }
 
 function cropFrame(sheet, row, col, cellWidth, cellHeight) {
-  const rgba = Buffer.alloc(cellWidth * cellHeight * 4);
-  for (let y = 0; y < cellHeight; y += 1) {
-    const srcOff = ((row * cellHeight + y) * sheet.width + col * cellWidth) * 4;
-    const dstOff = y * cellWidth * 4;
-    sheet.rgba.copy(rgba, dstOff, srcOff, srcOff + (cellWidth * 4));
-  }
-  return { width: cellWidth, height: cellHeight, rgba };
+  return cropRaster(sheet, {
+    x: col * cellWidth,
+    y: row * cellHeight,
+    width: cellWidth,
+    height: cellHeight
+  });
 }
 
 function applyChromaKey(image, rgb, tolerance) {
-  const rgba = Buffer.from(image.rgba);
-  for (let i = 0; i < rgba.length; i += 4) {
-    const distance = Math.sqrt(
-      ((rgba[i + 0] - rgb[0]) ** 2) +
-      ((rgba[i + 1] - rgb[1]) ** 2) +
-      ((rgba[i + 2] - rgb[2]) ** 2)
-    );
-    if (distance <= tolerance) {
-      rgba[i + 3] = 0;
-    }
-  }
-  return { width: image.width, height: image.height, rgba };
+  return chromaKeyRaster(image, rgb, { tolerance, clearRgb: false });
 }
 
 function frameName(prefix, direction, col) {

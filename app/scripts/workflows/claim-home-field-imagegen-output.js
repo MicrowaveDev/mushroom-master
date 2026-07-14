@@ -8,11 +8,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { repoRoot } from '../../shared/repo-root.js';
 import { fileSha256 } from '../lib/bitmap-image-toolkit.js';
+import { walkGeneratedImages } from '../lib/generated-image-discovery.js';
 
-const imageExts = new Set(['.png', '.webp', '.jpg', '.jpeg']);
 const verifyStages = new Set(['reference', 'state-sheet', 'frames', 'candidate']);
 const verifyDestinations = new Map([
   ['reference', '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png'],
@@ -81,42 +81,6 @@ function safeRelative(filePath) {
   return rel.startsWith('..') ? filePath : rel;
 }
 
-function walkImages(root, { maxDepth, cutoffMs, out }) {
-  if (!root || !fs.existsSync(root)) return;
-  const resolvedRoot = path.resolve(root);
-  const stack = [{ dir: resolvedRoot, depth: 0 }];
-  while (stack.length > 0) {
-    const { dir, depth } = stack.pop();
-    let entries;
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      let stat;
-      try {
-        stat = fs.statSync(fullPath);
-      } catch {
-        continue;
-      }
-      if (entry.isDirectory()) {
-        if (depth < maxDepth) stack.push({ dir: fullPath, depth: depth + 1 });
-        continue;
-      }
-      if (!entry.isFile() || !imageExts.has(path.extname(entry.name).toLowerCase())) continue;
-      if (stat.mtimeMs <= cutoffMs) continue;
-      out.push({
-        path: fullPath,
-        mtime: new Date(stat.mtimeMs).toISOString(),
-        bytes: stat.size,
-        sha256: fileSha256(fullPath)
-      });
-    }
-  }
-}
-
 function findNewerImages(argv, cutoffMs, limit) {
   const home = process.env.HOME || '';
   const codexHome = process.env.CODEX_HOME || path.join(home, '.codex');
@@ -133,10 +97,11 @@ function findNewerImages(argv, cutoffMs, limit) {
 
   const found = [];
   for (const root of roots) {
-    walkImages(root, {
+    walkGeneratedImages(root, {
       maxDepth: root === '/private/var/folders' ? 8 : 6,
       cutoffMs,
-      out: found
+      out: found,
+      strictlyNewer: true
     });
   }
 
@@ -153,7 +118,7 @@ function findNewerImages(argv, cutoffMs, limit) {
 }
 
 function runVerifier(stage) {
-  const result = spawnSync('npm', [
+  runChildProcessSync('npm', [
     'run',
     'game:home-field:verify-chibi-proof-files',
     '--',
@@ -163,9 +128,6 @@ function runVerifier(stage) {
     stdio: 'inherit',
     env: process.env
   });
-  if (result.status !== 0) {
-    throw new Error(`verify-chibi-proof-files -- --${stage} failed with status ${result.status}`);
-  }
 }
 
 function main() {

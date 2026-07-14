@@ -10,13 +10,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { spawnSync } from 'node:child_process';
+import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { repoRoot } from '../../shared/repo-root.js';
 import {
   encodeDeterministicPng,
   readPngAsRgba,
   readPngHeader
 } from '../lib/bitmap-image-toolkit.js';
+import { resizeRasterBox } from '@microwavedev/backpack-game-core/tooling/raster';
 
 const referencePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png';
 const apiSourcePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.api-source.png';
@@ -128,16 +129,13 @@ function parseEnvFile(filePath) {
 }
 
 function run(command, args, { env = process.env, allowFailure = false, capture = false } = {}) {
-  const result = spawnSync(command, args, {
+  return runChildProcessSync(command, args, {
     cwd: repoRoot,
     env,
     encoding: 'utf8',
-    stdio: capture ? 'pipe' : 'inherit'
+    stdio: capture ? 'pipe' : 'inherit',
+    allowFailure
   });
-  if (!allowFailure && result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} failed with status ${result.status}`);
-  }
-  return result;
 }
 
 function bundledPythonPath() {
@@ -177,39 +175,7 @@ function extractReferencePrompt() {
 }
 
 function resizeRgba(srcImage, dstWidth, dstHeight) {
-  const { width: sw, height: sh, rgba: src } = srcImage;
-  const dst = Buffer.alloc(dstWidth * dstHeight * 4);
-  const xRatio = sw / dstWidth;
-  const yRatio = sh / dstHeight;
-  for (let y = 0; y < dstHeight; y += 1) {
-    const sy0 = Math.floor(y * yRatio);
-    const sy1 = Math.min(sh, Math.ceil((y + 1) * yRatio));
-    for (let x = 0; x < dstWidth; x += 1) {
-      const sx0 = Math.floor(x * xRatio);
-      const sx1 = Math.min(sw, Math.ceil((x + 1) * xRatio));
-      let r = 0;
-      let g = 0;
-      let b = 0;
-      let a = 0;
-      let n = 0;
-      for (let yy = sy0; yy < sy1; yy += 1) {
-        for (let xx = sx0; xx < sx1; xx += 1) {
-          const si = (yy * sw + xx) * 4;
-          r += src[si + 0];
-          g += src[si + 1];
-          b += src[si + 2];
-          a += src[si + 3];
-          n += 1;
-        }
-      }
-      const di = (y * dstWidth + x) * 4;
-      dst[di + 0] = Math.round(r / n);
-      dst[di + 1] = Math.round(g / n);
-      dst[di + 2] = Math.round(b / n);
-      dst[di + 3] = Math.round(a / n);
-    }
-  }
-  return { width: dstWidth, height: dstHeight, rgba: dst };
+  return resizeRasterBox(srcImage, dstWidth, dstHeight);
 }
 
 function writeBlockerNote({ verifierResult, paletteResult, normalized, promptSha }) {
