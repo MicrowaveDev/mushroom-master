@@ -34,6 +34,8 @@ import {
   blendRasterOppositeEdges,
   blendRasterTowardAverage,
   composeFrameGrid,
+  compositeRaster,
+  createRaster,
   cropRaster,
   resizeRasterHybrid,
   resizeRasterNearest
@@ -261,26 +263,7 @@ function composeStrip(frameFiles, frameWidth, frameHeight, opts = {}) {
     }
     frames.push(frame);
   }
-  const hasHiddenRgb = frames.some((frame) => {
-    for (let offset = 0; offset < frame.rgba.length; offset += 4) {
-      if (frame.rgba[offset + 3] === 0
-        && (frame.rgba[offset] !== 0 || frame.rgba[offset + 1] !== 0 || frame.rgba[offset + 2] !== 0)) return true;
-    }
-    return false;
-  });
-  if (hasHiddenRgb) {
-    const stripWidth = frameWidth * frames.length;
-    const stripRgba = Buffer.alloc(stripWidth * frameHeight * 4);
-    frames.forEach((frame, index) => {
-      for (let y = 0; y < frameHeight; y += 1) {
-        const sourceOffset = y * frameWidth * 4;
-        const targetOffset = (y * stripWidth + index * frameWidth) * 4;
-        frame.rgba.copy(stripRgba, targetOffset, sourceOffset, sourceOffset + frameWidth * 4);
-      }
-    });
-    return { width: stripWidth, height: frameHeight, rgba: stripRgba };
-  }
-  return composeFrameGrid(frames, { rows: 1, columns: frames.length });
+  return composeFrameGrid(frames, { rows: 1, columns: frames.length, mode: 'copy' });
 }
 
 function outputAbsFor(entry, opts) {
@@ -429,14 +412,6 @@ function characterEntryToAsset(c) {
   };
 }
 
-function copyFrameInto(targetRgba, targetWidth, frame, dstRow, dstCol, frameWidth, frameHeight) {
-  for (let y = 0; y < frameHeight; y += 1) {
-    const srcOff = y * frameWidth * 4;
-    const dstOff = ((dstRow * frameHeight + y) * targetWidth + dstCol * frameWidth) * 4;
-    frame.rgba.copy(targetRgba, dstOff, srcOff, srcOff + frameWidth * 4);
-  }
-}
-
 function processCharacterPlaceholder(entry, opts = {}) {
   const s = entry.spritesheet;
   const baseName = path.basename(entry.sourcePath, '.source.png'); // e.g. _placeholder_chibi
@@ -484,7 +459,7 @@ function processCharacterPlaceholder(entry, opts = {}) {
     };
   }
 
-  const sheetRgba = Buffer.alloc(s.width * s.height * 4);
+  const sheet = createRaster(s.width, s.height);
   for (const r of required) {
     let frame = readPngRgba(path.join(rawDir, r.file));
     if (frame.width !== s.frameWidth || frame.height !== s.frameHeight) {
@@ -501,18 +476,26 @@ function processCharacterPlaceholder(entry, opts = {}) {
     if (r.col === 'walk') {
       // Legacy placeholder fallback: replicate the single walk frame across the row.
       for (const col of walkCols) {
-        copyFrameInto(sheetRgba, s.width, frame, r.row, col, s.frameWidth, s.frameHeight);
+        compositeRaster(sheet, frame, {
+          x: col * s.frameWidth,
+          y: r.row * s.frameHeight,
+          mode: 'copy'
+        });
       }
     } else {
-      copyFrameInto(sheetRgba, s.width, frame, r.row, r.col, s.frameWidth, s.frameHeight);
+      compositeRaster(sheet, frame, {
+        x: r.col * s.frameWidth,
+        y: r.row * s.frameHeight,
+        mode: 'copy'
+      });
     }
   }
 
   const outAbs = outputAbsFor(entry, opts);
   ensureDir(path.dirname(outAbs));
-  fs.writeFileSync(outAbs, encodeDeterministicPng({ width: s.width, height: s.height, rgba: sheetRgba }));
+  fs.writeFileSync(outAbs, encodeDeterministicPng(sheet));
 
-  const stats = alphaStats({ width: s.width, height: s.height, rgba: sheetRgba }, { x: 0, y: 0, width: s.width, height: s.height });
+  const stats = alphaStats(sheet, { x: 0, y: 0, width: s.width, height: s.height });
   return {
     id: entry.id,
     ok: true,

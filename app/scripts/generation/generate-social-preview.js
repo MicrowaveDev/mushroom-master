@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer';
+import { escapeHtml, imageFileDataUrl } from '@microwavedev/backpack-game-core/tooling/image';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -107,19 +108,8 @@ Options:
 `;
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
 function imageDataUrl(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const mime = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
-  return `data:${mime};base64,${fs.readFileSync(filePath).toString('base64')}`;
+  return imageFileDataUrl(filePath);
 }
 
 function buildHtml({ base, title, subtitle, layout, style }) {

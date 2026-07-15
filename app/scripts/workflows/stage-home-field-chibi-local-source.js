@@ -18,7 +18,7 @@ import {
   readPngHeader,
   repoRoot
 } from '../lib/bitmap-image-toolkit.js';
-import { cropRaster, resizeRasterBox } from '@microwavedev/backpack-game-core/tooling/raster';
+import { createRaster, cropRaster, resizeRasterBox } from '@microwavedev/backpack-game-core/tooling/raster';
 
 const COLS = 8;
 const ROWS = 4;
@@ -101,13 +101,8 @@ function resizeFrame(srcImage, dstWidth, dstHeight) {
 function makeReferenceProxy(sheet, cellWidth, cellHeight) {
   const width = 512;
   const height = 384;
-  const rgba = Buffer.alloc(width * height * 4);
-  for (let i = 0; i < rgba.length; i += 4) {
-    rgba[i + 0] = MAGENTA[0];
-    rgba[i + 1] = MAGENTA[1];
-    rgba[i + 2] = MAGENTA[2];
-    rgba[i + 3] = MAGENTA[3];
-  }
+  const proxy = createRaster(width, height, MAGENTA);
+  const { rgba } = proxy;
 
   DIRECTIONS.forEach((direction, row) => {
     const cropped = cropFrame(sheet, row, 0, cellWidth, cellHeight);
@@ -128,7 +123,7 @@ function makeReferenceProxy(sheet, cellWidth, cellHeight) {
     }
   });
 
-  return { width, height, rgba };
+  return proxy;
 }
 
 function sourceFromArgs() {

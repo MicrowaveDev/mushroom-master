@@ -719,6 +719,63 @@ test('[home-field] produce rejects opaque checkerboard-like prop mattes', () => 
   }
 });
 
+test('[home-field] animated strip production preserves transparent hidden RGB bytes', () => {
+  const fixtureDir = path.join(repoRoot, 'tmp/home-field-frame-copy-test');
+  const rawDir = path.join(fixtureDir, 'raw');
+  const candidateRoot = path.join(fixtureDir, 'candidate');
+  const assetsPath = path.join(fixtureDir, 'home-field-assets.fixture.json');
+  const sourcePath = path.join(rawDir, 'spark.source.png');
+  const outputPath = 'web/public/home-field/__test__/spark.png';
+  const outputAbs = path.join(candidateRoot, outputPath);
+  const first = { width: 2, height: 1, rgba: Buffer.from([9, 8, 7, 0, 1, 2, 3, 255]) };
+  const second = { width: 2, height: 1, rgba: Buffer.from([6, 5, 4, 127, 3, 2, 1, 0]) };
+  fs.rmSync(fixtureDir, { recursive: true, force: true });
+  fs.mkdirSync(rawDir, { recursive: true });
+  fs.writeFileSync(path.join(rawDir, 'spark.frame_0.source.png'), encodeDeterministicPng(first));
+  fs.writeFileSync(path.join(rawDir, 'spark.frame_1.source.png'), encodeDeterministicPng(second));
+  fs.writeFileSync(assetsPath, JSON.stringify({
+    version: 1,
+    tileSize: 256,
+    assets: [{
+      id: 'spark',
+      type: 'prop',
+      role: 'test_animation',
+      promptKey: 'test_animation',
+      sourcePath: path.relative(repoRoot, sourcePath),
+      outputPath,
+      publicPath: '/home-field/__test__/spark.png',
+      width: 4,
+      height: 1,
+      anchor: { x: 0.5, y: 0.9 },
+      readability: { minBboxWidth: 1, minBboxHeight: 1 },
+      collision: 'walkable',
+      animation: { frames: 2, frameWidth: 2, frameHeight: 1, fps: 8, loop: true, stillFrameIndex: 0 },
+      status: 'generated'
+    }],
+    characters: []
+  }, null, 2));
+
+  try {
+    const result = spawnSync(process.execPath, [
+      scriptPath,
+      'spark',
+      '--candidate',
+      `--candidate-root=${candidateRoot}`
+    ], {
+      cwd: repoRoot,
+      env: { ...process.env, HOME_FIELD_ASSETS_PATH: assetsPath },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const expected = { width: 4, height: 1, rgba: Buffer.concat([first.rgba, second.rgba]) };
+    assert.deepEqual(readPngRgba(outputAbs), expected);
+    assert.equal(fs.readFileSync(outputAbs).equals(encodeDeterministicPng(expected)), true);
+  } finally {
+    fs.rmSync(fixtureDir, { recursive: true, force: true });
+  }
+});
+
 test('[home-field] produce supports object-layer candidate root', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-candidate-prop-test');
   const rawPath = path.join(repoRoot, '.agent/home-field-test-workspace/raw/chroma_fixture.source.png');

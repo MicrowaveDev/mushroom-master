@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { seasonLevels } from '../../shared/season-levels.js';
 import achievements from '../../shared/run-achievements.json' with { type: 'json' };
-import { repoRoot, escapeHtml } from './bitmap-image-toolkit.js';
+import { repoRoot, escapeHtml, imageFileDataUrl } from './bitmap-image-toolkit.js';
 
 export { repoRoot, escapeHtml };
 export const seasonRankDir = path.join(repoRoot, 'web', 'public', 'season-ranks');
@@ -105,7 +105,7 @@ export function seasonImageDataUrl(entry) {
   if (!fs.existsSync(entry.outputPath)) {
     throw new Error(`Missing season image: ${path.relative(repoRoot, entry.outputPath)}`);
   }
-  return `data:image/png;base64,${fs.readFileSync(entry.outputPath).toString('base64')}`;
+  return imageFileDataUrl(entry.outputPath);
 }
 
 export function relativeOutputPath(entry) {

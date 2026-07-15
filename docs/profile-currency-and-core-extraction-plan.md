@@ -1474,6 +1474,37 @@ Optional hardening order, behind Hosted Telegram/web launch work:
    source or public type contains Mushroom, spore, Thalla, Home Field, artifact
    id, Codex temp-root, or product acceptance vocabulary.
 
+Implementation result 2026-07-15: H1-H3 and H5 are complete on core
+`1265795`. `composeFrameGrid()` now forwards validated composite modes and its
+`copy` mode preserves transparent hidden RGB and partial alpha; Mushroom's
+animated strips and sparse character sheets use the shared raster APIs, with a
+producer-level deterministic PNG fixture. The chibi reference proxy now uses
+core canvas creation but intentionally retains its local alpha-cutoff/direct-RGB
+copy loop because existing composite modes do not express that compatibility
+contract exactly. Core now exposes MIME-aware `imageFileDataUrl()`, adopted by
+Mushroom artifact, season, and social-preview generators and Meat's production
+asset review while preserving each product's missing-file behavior. The final
+duplicate social-preview HTML escaping helper was removed in favor of core.
+
+H4 is closed without a move: generated-file traversal, newest raw-source
+selection, indexed-frame discovery, and archive listing still have different
+roots, recursion, naming, cutoff, ordering, and error contracts, and Meat has
+no real candidate-discovery adopter. H5's proposed distinct-frame,
+silhouette-metric, boolean-grid-boundary, and alpha-threshold operations remain
+local/provisional for the same reason; product validators already call the
+lower-level core metrics directly. Do not reopen either item until a second
+consumer supplies fixtures for the same neutral result contract.
+
+H6 verification passed for core tests and package dry-run, Mushroom's full
+game-unit suite, script documentation, artifact/season byte-identical review
+sheets and production build, and Meat's production review, script
+documentation, full game tests, browser parity journey, hosted deploy-config
+check, and production build. The hub one-SHA verifier was the final pointer
+publication gate; it passed for core `12657950a4cda2671bc9bfa7c531859fd0049fb7`
+including Mushroom screenshot and focused support/gacha-admin E2E checks plus
+Meat hosted and local deployment-mode checks. Phase 8BG-H is closed. Further
+script extraction remains duplication-driven backlog behind the hosted launch.
+
 #### Completion Gates
 
 - The five sheet PNG hashes and dimensions remain exact unless a reviewed

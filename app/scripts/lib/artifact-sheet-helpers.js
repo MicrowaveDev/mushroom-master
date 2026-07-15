@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { artifacts } from '../../server/game-data.js';
 import { getBagShape } from '../../shared/bag-shape.js';
-import { repoRoot, escapeHtml } from './bitmap-image-toolkit.js';
+import { repoRoot, escapeHtml, imageFileDataUrl } from './bitmap-image-toolkit.js';
 
 export { repoRoot, escapeHtml };
 export const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
@@ -53,7 +53,7 @@ export function artifactImageDataUrl(artifact) {
   if (!fs.existsSync(imagePath)) {
     throw new Error(`Missing artifact image: ${path.relative(repoRoot, imagePath)}`);
   }
-  return `data:image/png;base64,${fs.readFileSync(imagePath).toString('base64')}`;
+  return imageFileDataUrl(imagePath);
 }
 
 export function artifactFootprintLabel(artifact) {
