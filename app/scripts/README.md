@@ -10,6 +10,14 @@ The machine-readable classification is in
 [`command-manifest.json`](./command-manifest.json), and
 `npm run scripts:docs:check` keeps it aligned with `package.json`.
 
+Shared tooling routes are cataloged in
+[`vendor/backpack-game-core/docs/tooling-routing.md`](../../vendor/backpack-game-core/docs/tooling-routing.md).
+The local npm alias is the public interface. For example,
+`scripts:docs:check` delegates to the core CLI with `--repo-root .`; do not run
+files from the nested core checkout directly. Product-configured image,
+workflow, database, and deployment commands remain local wrappers around core
+libraries where appropriate.
+
 ## Directory Layout
 
 The folders describe implementation responsibility, while npm command names

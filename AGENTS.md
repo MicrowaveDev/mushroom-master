@@ -65,6 +65,13 @@ facades (`modules/loadout`, `modules/gacha`, `modules/wallet`, and so on), keep
 consumer imports on package exports, and do not add implementation files to
 the core `src/` root.
 
+For scripts backed by core tooling, read
+`vendor/backpack-game-core/docs/tooling-routing.md` and invoke the documented
+Mushroom npm alias from this repository root. Universal commands receive
+`--repo-root .` through the alias; do not execute nested core source or bin
+paths directly. Keep product catalogs, thresholds, queues, mutation policy,
+and operator workflows in configured Mushroom wrappers.
+
 Cross-game runtime goals: when working on Mushroom Battles backend, storage,
 deploy config, shared-core adapters, or code that Meat should reuse, keep the
 two-mode target from

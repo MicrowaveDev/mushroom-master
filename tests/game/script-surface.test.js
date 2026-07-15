@@ -121,7 +121,7 @@ test('[scripts] placeholder generator is isolated from production assets', () =>
 });
 
 test('[scripts] documentation and manifest cover the supported command surface', () => {
-  const result = spawnSync(process.execPath, ['app/scripts/checks/check-script-documentation.js'], {
+  const result = spawnSync('npm', ['run', '--silent', 'scripts:docs:check'], {
     cwd: repoRoot,
     encoding: 'utf8'
   });

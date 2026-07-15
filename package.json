@@ -79,7 +79,7 @@
     "game:test:screens:debug": "node app/scripts/runners/run-game-playwright.js --suite=screens --debug",
     "test": "node --test",
     "shrink:screenshots": "bash ../bash/shrink-screenshots.sh",
-    "scripts:docs:check": "node app/scripts/checks/check-script-documentation.js"
+    "scripts:docs:check": "backpack-game-core scripts:docs:check --repo-root ."
   },
   "dependencies": {
     "@microwavedev/backpack-game-core": "file:vendor/backpack-game-core",
