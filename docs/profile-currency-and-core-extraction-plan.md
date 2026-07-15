@@ -629,12 +629,13 @@ workflows. Script extraction is no longer an active queue item. The remaining
 active lane is the ordered production decision/deploy/storage/security work
 below; tooling follow-ups are non-blocking hardening unless a concrete defect
 promotes one into the release scope.
-Updated again 2026-07-14 after the residual script audit: Phase 8BF established
-the shared raster/evidence foundation but did not eliminate every local wrapper
-or pixel loop. Phase 8BG records the remaining neutral candidates and the
-intentional product boundaries. It is a bounded, non-blocking hardening lane
-behind the Hosted Telegram/web launch work; it must not become a reason to move
-Home Field policy, procedural art direction, or agent-workflow state into core.
+Updated again 2026-07-15 after Phase 8BG completion: the bounded residual
+raster/evidence pass is shipped and verified in both consumers. The surviving
+local loops are compatibility or product-policy boundaries, not unfinished
+bulk extraction. Further core work is defect-driven or duplication-driven
+hardening behind the Hosted Telegram/web launch; it must not become a reason to
+move Home Field policy, procedural art direction, or agent-workflow state into
+core.
 
 **File movement rule for S/F lanes:** when implementation starts, move current
 files from disk with filesystem/Git operations. Use `git mv` for same-repo
@@ -643,9 +644,91 @@ Do not recreate moved files from agent memory. Copy instead of move only when a
 temporary compatibility copy is explicitly part of the migration, and remove or
 promote that copy during the stabilization step.
 
-### Current TODO Queue - Actualized 2026-07-14
+### Current TODO Queue - Actualized 2026-07-15
 
-Use this ordered queue before starting the next implementation pass:
+The authoritative remaining queue is now intentionally short. Phase 8BG is
+closed on core `521c444`, Mushroom `9a8fb53`, Meat `35da71a`, and hub
+`003a5a7`; do not reopen broad server, frontend, or script extraction as launch
+work. Execute the remaining work in this order:
+
+1. **Prove the hosted Meat deployment with real infrastructure.** Deploy the
+   current app and Docker PostgreSQL configuration to the selected host, open
+   it through the real Telegram bot/public URL, verify signed init data, and
+   prove that the same profile and active run resume after an app restart. Add
+   a repeatable hosted smoke for health, login, bootstrap, run start/resume,
+   wallet read, and community status with dev login disabled.
+2. **Finish hosted data recovery and migration operations.** Introduce or
+   confirm versioned Sequelize migrations for every hosted table/index used by
+   the release, record an off-host PostgreSQL backup and timed restore drill,
+   and document forward-fix versus rollback policy. JSON snapshot buckets may
+   remain for unpaid gameplay only; normalize searchable reconciliation,
+   support, wallet, payment, and gacha records before enabling those features.
+3. **Close deploy security and operator controls.** Put auth and mutation rate
+   limits in deploy-edge/shared storage before horizontal scaling, separate
+   bot, support, admin, provider, and webhook credentials, retain structured
+   audit logs, and perform token/webhook-secret rotation and least-privilege
+   operator drills. Add user-visible tests for expired sessions and disabled
+   production dev login.
+4. **Replace and approve the 12 Meat production assets.** The shared pipeline,
+   candidate-root review, visible alpha-edge diagnostics, provenance binding,
+   and release gate now exist. The remaining failure is content: eight copied
+   artifact PNGs and four character/profile outputs still carry
+   `starter_port`/prototype status and Mushroom-derived ids/copy. Produce
+   distinct Meat-owned outputs, review each one, update provenance and blocked
+   hashes, and require `game:assets:validate` plus
+   `game:assets:release-check` to pass before public launch.
+5. **Record two explicit first-release product decisions.** Approve compact
+   auto-pack as an intentional Meat UX difference or schedule Mushroom-style
+   manual drag/rotate/save parity. Separately decide whether payments and gacha
+   are disabled for release one. A deferral is acceptable only when deploy
+   config proves the features cannot be enabled accidentally.
+6. **If money or simple gacha is in release one, run the paid pilot lane.** Do
+   fresh provider research at implementation time rather than freezing an old
+   fee/policy recommendation. Validate Telegram Stars and the selected crypto
+   path with real signed payloads and adult-content acceptance; connect
+   payment-intent, provider-event, wallet, roll, burn, refund, idempotency, and
+   reconciliation records; then complete age/content, terms, refund, dispute,
+   tax, privacy, retention, odds-disclosure, support, and rollback review.
+7. **Treat additional core work as bounded hardening, not a feature lane.** Add
+   automated golden assertions for the five frozen Mushroom review PNGs and
+   Meat schema-v2 evidence if CI does not already retain them. Keep the legacy
+   hidden-RGB frame copy and alpha-fit sampler local while byte compatibility
+   requires them. The neutral alpha-fit API remains provisional until a new
+   consumer can adopt it without changing approved output. Version any future
+   evidence-schema change and test old-manifest verification/migration rather
+   than silently rewriting historical evidence. Keep submodule SHA plus
+   changelog as the release identity; defer npm publication and semver migration
+   until a consumer outside this hub creates a real distribution need.
+8. **Keep desktop, advanced economy, and speculative sharing in backlog.**
+   Electron installers, signing/notarization, offline action replay, account
+   progress merging, friends/challenges/shared seasons beyond selected hosted
+   scope, multi-item rarity guarantees beyond the shipped simple lane,
+   duplicate currencies, marketplace/trading/escrow, and NFT/export policy
+   require separate product, legal, security, and operations ownership.
+
+Post-implementation guardrails from Phase 8BG:
+
+- Preserve the dependency order core -> both consumers -> hub pointers, and
+  require `npm run verify:backpack-core` on one shared SHA.
+- Core owns neutral images, masks, rectangles, hashes, records, DTOs, and
+  injected module factories. Products keep catalogs, thresholds, prompts,
+  acceptance decisions, credentials, persistence, routes, and final layouts.
+- A primitive is cross-game stable only after visible or authoritative use in
+  both games. A utility proven by several independent Mushroom paths may remain
+  provisional, but must not be presented as second-consumer validated.
+- Do not remove a compatibility fallback merely to eliminate the final local
+  loop. Hidden RGB, alpha threshold rounding, grid remainder placement, and
+  max-alpha behavior are observable contracts and need golden tests before
+  replacement.
+- Immutable generated evidence is self-hashed and verifiable; mutable verdict,
+  invalidation, and operator state is atomic but must not be mislabeled as
+  immutable evidence.
+- Keep the core synchronous runner limited to bounded commands. Dev servers,
+  Playwright lifecycle, provider streaming, deployment topology, and long-lived
+  processes remain product-owned until two consumers need the same lifecycle.
+
+The numbered list below is the historical implementation log that led to this
+queue. It is retained for traceability and is not a second active TODO list:
 
 1. **Completed 2026-07-13: move `gacha-admin-service.js` to core.** The service
    now lives in the quarantined Mushroom economy port and Mushroom's old import
@@ -2424,16 +2507,18 @@ stack.
 
 ### Active Lane - Phase 13 Meat Production Parity Hardening
 
-Status: **Partially implemented 2026-07-05, second hardening pass complete.**
+Status: **Active launch-hardening lane, actualized 2026-07-15.**
 Phase 12 and the first browser hardening pass made Meat playable locally with
 Mushroom-class login/player/run/wallet mechanics. The Phase 13 passes now add
 production store/config hardening, SQLite schema v2 with transactional store
 updates, future payment/gacha ledger buckets, logical backup/restore,
 expanded browser mechanics/error coverage, scoped support operators with audit
-actor metadata, support mutations, and asset provenance. Remaining items are
-live deploy validation, final production DB/runtime policy, asset replacement
-workflow, paid/gacha reconciliation integration if enabled, and the remaining
-auto-pack/payment/gacha scope decisions for the selected hosted target.
+actor metadata, support mutations, asset provenance, and the shared production
+asset review pipeline. Remaining launch work is real hosted deploy validation,
+PostgreSQL migration/recovery evidence, deploy security/operator drills, the 12
+approved Meat asset outputs, and explicit auto-pack/payment/gacha scope
+decisions. Paid/gacha reconciliation is required only if those features are
+enabled for the selected hosted target.
 
 **Production-target decision 2026-07-14:** the first target is hosted
 Telegram/web. Desktop packaging is backlog. PostgreSQL deployment, real
@@ -2562,11 +2647,13 @@ for the same class of game loop as Mushroom.
 
 #### P13.4 - Product Content And Asset Readiness
 
-Status: **Implemented first pass 2026-07-05.** Meat starter artifacts,
-characters, and profile assets now carry provenance metadata; characters carry
-adult-content policy flags; tests enforce provenance/policy presence. Remaining
-launch work: replace `starter_port`/prototype art with production-owned Meat
-assets or explicitly approve the placeholders.
+Status: **Pipeline implemented through 2026-07-14; content remains blocked.**
+Meat starter artifacts, characters, and profile assets carry provenance and
+adult-content policy metadata. The shared candidate/review pipeline now renders
+real alpha-edge diagnostics, accepts isolated candidate roots, emits schema-v2
+self-hashed evidence, and is covered by deterministic tests. The release gate
+still correctly fails because all 12 distinct production replacements are
+missing; placeholders are not acceptable for the selected public target.
 
 Goal: Meat should not accidentally ship with Mushroom placeholder content or
 untracked generated/prototype art.
@@ -2606,7 +2693,7 @@ gacha is enabled.
 
 #### P13.6 - Core Extraction Follow-Up
 
-Status: **Started 2026-07-06.** The implementation kept DB transactions,
+Status: **Closed as an active lane on 2026-07-14.** The implementation kept DB transactions,
 route wiring, support policy, Telegram/deploy config, and product content in
 Meat. The first follow-up extracted provider-driven run-state summary DTO
 shaping into `modules/run`; Meat now passes product-local loadout totals,
@@ -2633,10 +2720,10 @@ current auth/bootstrap/dev-session handlers through core descriptors, and Meat
 verifies the same route family with its product paths. Provider verification,
 sessions, middleware policy, player lookup, and final path choices stay
 product-local.
-Remaining neutral DTO/planner extraction stays valid after the
-production-parity mechanics settle, and the new server-module lane allows
-shared route factories/service modules once concrete repositories and final app
-wiring stay product-local.
+The planned profile/run runtime, server route/module factories, first shared
+page shells/components, and Node script/raster/evidence tooling are now adopted
+by both games on one pinned core SHA. Remaining extraction is optional and must
+start from newly demonstrated duplication; it is not Phase 13 launch work.
 
 Goal: avoid duplicating Mushroom product logic in Meat while keeping product
 execution local.
@@ -2852,20 +2939,19 @@ the hub cross-consumer gate pass.
 - **Manual editor decision:** compact auto-pack is currently documented as Meat
   UX divergence. Product must either approve it explicitly or schedule manual
   drag/rotate/save loadout parity with Mushroom.
-- **Asset replacement workflow:** provenance metadata exists, but there is no
-  production replacement pipeline, contact sheet, review checklist, or release
-  gate for replacing `starter_port` and prototype art with Meat-owned assets.
+- **Asset replacement content:** the production replacement pipeline, review
+  sheet, alpha diagnostics, provenance evidence, and release gate now exist.
+  The remaining blocker is the 12 Meat-owned approved outputs themselves.
 - **Paid/gacha ledger readiness:** first schema bucket pass implemented, but
   not connected to provider/webhook/roll logic. Before enabling coin purchases,
   gacha rolls, or pack seasons in Meat, wire payment-intent, provider-event,
   roll, burn, idempotency, and reconciliation records to real flows.
-- **Core extraction follow-up:** first slices started with provider-driven
-  run-state summary DTO shaping in `modules/run`, consumed by Meat, and
-  provider-neutral support lookup/mutation response DTO shaping in
-  `modules/support`, consumed by Mushroom and Meat. Reusable DTO/planner
-  candidates remain after the hardening pass: deploy config validation
-  summaries and bootstrap/settings shapers. Extract only the pure pieces after
-  the product-local policies settle.
+- **Core extraction follow-up:** closed as a broad lane. Shared profile/run
+  runtimes, route descriptors, frontend shells/components, config/auth/support
+  DTOs, and script tooling are adopted by both products. Future movement must
+  be a small response to concrete duplicated behavior and pass the same-SHA
+  cross-consumer gate; do not inventory product files merely to find more code
+  to move.
 - **Release gate update:** Phase 13 is not launch-complete until the above
   storage, runtime, operator, live Telegram, asset, and ledger decisions are
   either implemented or explicitly deferred by the product owner.
@@ -6549,10 +6635,10 @@ frontend adoption.
    persistent game-run, replay, wallet reward, asset/equipment, and minimal
    support/admin mechanics, while keeping Meat content, settings, art, copy,
    adult-content policy, and provider/payment choices local. See M1-M9 in the
-   Current Remaining Work Matrix. Remaining work is production hardening:
-   production DB/migrations, live Telegram deployment, optional gacha buy/roll,
-   live payments, richer admin/support operations, and broader visual coverage
-   for additional screens.
+   Current Remaining Work Matrix. Remaining work is hosted production proof:
+   PostgreSQL migrations/recovery, live Telegram deployment, operator security,
+   12 approved Meat-owned assets, and explicit auto-pack/payment/gacha scope
+   decisions.
 86. Phase 13 Meat production parity hardening. **Added 2026-07-05 after
    browser parity review:** the next active implementation lane is production
    readiness for the second game, not advanced monetization. Implement or
@@ -6571,12 +6657,14 @@ frontend adoption.
    hosting/backup/rollback decision and optional manual bag editor if compact
    auto-pack is not accepted. The planned profile/run runtime and first shared
    page extraction follow-up is complete.
-87. Phase 13 post-implementation review findings. **Added 2026-07-05, updated
-   2026-07-06:** before treating Meat as launch-ready, resolve remaining
-   normalized ledger/schema needs, backup/rollback drills, support operator
-   rotation, real Telegram deploy smoke, UI error coverage, manual editor
-   decision, asset replacement workflow, and paid/gacha ledger readiness.
-   Further core extraction is optional and must follow concrete duplication.
+87. Phase 13 post-implementation review findings. **Added 2026-07-05,
+   actualized 2026-07-15:** before treating Meat as launch-ready, resolve
+   migration/recovery evidence, support credential rotation, real Telegram
+   deploy smoke, remaining production UI error coverage, the manual-editor
+   decision, and the 12 production asset outputs. Paid/gacha ledger readiness
+   is mandatory only if those features are enabled. The asset pipeline and
+   broad core extraction are complete; further core movement is optional and
+   must follow concrete duplication.
    The earlier multi-process/experimental `node:sqlite` concern is superseded
    by the hosted Postgres mode and Sequelize SQLite local mode.
 88. Phase 8AZ server route-module extraction. **Implemented 2026-07-13:** core
