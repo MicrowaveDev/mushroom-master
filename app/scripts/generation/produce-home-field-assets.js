@@ -24,8 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
 import {
-  composePngFrameGrid,
-  findIndexedFiles
+  prepareIndexedPngAnimation
 } from '@microwavedev/backpack-game-core/tooling/frame-files';
 import { opaqueMatteMetrics } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 import {
@@ -285,58 +284,30 @@ function processAnimatedEntry(entry, opts) {
   const a = entry.animation;
   if (!a) return processStaticEntry(entry, opts);
 
-  const rawAbs = path.join(repoRoot, entry.sourcePath);
-  const sourceDir = path.dirname(entry.sourcePath);
-  const sourceBaseName = path.basename(entry.sourcePath, '.source.png');
-  const frameFiles = findIndexedFiles(sourceDir, {
+  const prepared = prepareIndexedPngAnimation({
     root: repoRoot,
-    prefix: `${sourceBaseName}.frame_`,
-    suffix: '.source.png'
+    sourcePath: entry.sourcePath,
+    expectedFrames: a.frames,
+    frameWidth: a.frameWidth,
+    frameHeight: a.frameHeight,
+    outputWidth: entry.width,
+    outputHeight: entry.height,
+    resize: opts.resize ? (opts.resize === 'nearest' ? 'nearest' : 'hybrid') : undefined,
+    mode: 'copy'
   });
 
-  if (frameFiles.length === 0) {
-    if (fs.existsSync(rawAbs)) {
-      // Raw is a pre-composed strip; treat as static and let dimension check handle it.
-      return processStaticEntry(entry, opts);
-    }
-    return {
-      id: entry.id,
-      ok: false,
-      reason: `no raw frames found at ${path.dirname(entry.sourcePath)}/${path.basename(entry.sourcePath, '.source.png')}.frame_NN.source.png and no pre-composed strip at ${entry.sourcePath}`
-    };
+  if (prepared.ok && prepared.kind === 'fallback') {
+    return processStaticEntry(entry, opts);
   }
-
-  if (frameFiles.length !== a.frames) {
-    return {
-      id: entry.id,
-      ok: false,
-      reason: `expected ${a.frames} frame files, found ${frameFiles.length}`
-    };
-  }
-
-  let strip;
-  try {
-    strip = composePngFrameGrid(frameFiles.map(({ file }) => file), {
-      root: repoRoot,
-      frameWidth: a.frameWidth,
-      frameHeight: a.frameHeight,
-      resize: opts.resize ? (opts.resize === 'nearest' ? 'nearest' : 'hybrid') : undefined,
-      mode: 'copy'
-    });
-  } catch (err) {
-    const resizeHint = !opts.resize && /, expected \d+x\d+$/.test(err.message)
+  if (!prepared.ok) {
+    const resizeHint = prepared.code === 'frame-processing-failed'
+      && !opts.resize
+      && /, expected \d+x\d+$/.test(prepared.message)
       ? ' (pass --resize to scale)'
       : '';
-    return { id: entry.id, ok: false, reason: `${err.message}${resizeHint}` };
+    return { id: entry.id, ok: false, reason: `${prepared.message}${resizeHint}` };
   }
-
-  if (strip.width !== entry.width || strip.height !== entry.height) {
-    return {
-      id: entry.id,
-      ok: false,
-      reason: `composed strip ${strip.width}x${strip.height} != expected ${entry.width}x${entry.height}`
-    };
-  }
+  const strip = prepared.image;
 
   const outAbs = outputAbsFor(entry, opts);
   ensureDir(path.dirname(outAbs));

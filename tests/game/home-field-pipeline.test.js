@@ -719,6 +719,15 @@ test('[home-field] produce rejects opaque checkerboard-like prop mattes', () => 
   }
 });
 
+test('[home-field] animated asset preparation delegates its state machine to core', () => {
+  const source = fs.readFileSync(scriptPath, 'utf8');
+  const coordinator = source.match(/function processAnimatedEntry[\s\S]*?\n}\n\nfunction processEntry/)?.[0];
+  assert.ok(coordinator, 'expected processAnimatedEntry coordinator');
+  assert.match(coordinator, /prepareIndexedPngAnimation\(/);
+  assert.doesNotMatch(coordinator, /findIndexedFiles|composePngFrameGrid|frameFiles\.length/);
+  assert.ok(coordinator.split('\n').length < 50, 'product animation adapter should stay thin');
+});
+
 test('[home-field] animated strip production preserves transparent hidden RGB bytes', () => {
   const fixtureDir = path.join(repoRoot, 'tmp/home-field-frame-copy-test');
   const rawDir = path.join(fixtureDir, 'raw');

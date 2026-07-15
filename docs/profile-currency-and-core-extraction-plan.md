@@ -1418,9 +1418,10 @@ new consumers but is not substituted into that legacy producer yet.
 Post-completion finding 2026-07-15: the hidden-RGB strip fallback and its file
 mechanics are not product policy. Core now owns byte-preserving frame-grid copy,
 configurable indexed-file matching and ordering, PNG frame loading, optional
-resize, and composition. Mushroom supplies its `.source.png`/
-`.frame_N.source.png` convention, repository root, resize selection, expected
-frame count, fallback behavior, and remediation copy. Tests cover transparent
+resize, composition, fallback detection, expected-frame validation, and output
+dimension validation. Mushroom injects its `.source.png`/
+`.frame_N.source.png` convention, repository root, dimensions, and resize
+selection, then retains output placement and transparency acceptance policy. Tests cover transparent
 hidden RGB, partial alpha, numeric ordering, regex-special filename fragments,
 missing directories, resize behavior, dimension errors, and invalid modes.
 
@@ -1435,7 +1436,7 @@ everything else.
 | Residual code | Recommendation | Boundary and proof required |
 | --- | --- | --- |
 | `artifactImageDataUrl()`, `seasonImageDataUrl()`, Mushroom social-preview `imageDataUrl()`, and Meat production-review `dataUrl()` | Add a Node-only `fileDataUrl(filePath, { mime })` or `imageFileDataUrl()` export in core, with MIME inference for supported image extensions | This is already duplicated across both products. Product wrappers may retain catalog labels and missing-file messages; encoded in-memory diagnostic rasters continue to use `encodeDeterministicPng()` directly. Test PNG/JPEG/WebP MIME, empty files, missing files, and deterministic output. |
-| Indexed animated-frame discovery and hidden-RGB strip assembly in `produce-home-field-assets.js` | Use core `findIndexedFiles()` and `composePngFrameGrid()` with `mode: 'copy'`; keep only the product pattern and messages local | Completed. Core owns matching, ordering, loading, resizing, and composition; Mushroom owns source naming, paths, count policy, fallback, and remediation. |
+| Indexed animated-frame discovery and hidden-RGB strip assembly in `produce-home-field-assets.js` | Use core `prepareIndexedPngAnimation()` with injected naming, dimensions, resize, and copy mode | Completed. Core owns path derivation, matching, ordering, fallback classification, count validation, loading, resizing, composition, dimension validation, and neutral structured failures; Mushroom owns output placement and alpha acceptance. |
 | Sparse character placeholder placement and the chibi reference proxy | Prefer existing `createRaster()`, `cropRaster()`/`extractFrame()`, resize, and `compositeRaster({ mode: 'copy' })`/`opaque` primitives over local buffer allocation and row copies | Add no sprite-specific core API yet. Preserve legacy walk-frame replication, direction/row mapping, alpha cutoff, magenta reference color, and forced-alpha behavior in Mushroom. Introduce a neutral alpha-threshold transform only after another real adopter needs the same semantics. |
 | `generated-image-discovery.js`, `newestImagegenRawFor()`, and archive raw-file listing | Consider a separate bounded recursive evidence-discovery API only with a second adopter | Indexed sibling-file discovery is now solved by `findIndexedFiles()`. Recursive walking, mtimes, cutoffs, hashing, symlinks, and newest-file selection remain distinct contracts; temp roots, Codex paths, freshness decisions, and user-facing errors stay local. |
 | Artifact safe-canvas fit and frame/silhouette analysis | Reuse the existing core alpha-fit, frame-grid, `frameDifference()`, `alphaBounds()`, and connected-component APIs; add no duplicate helper merely to shorten local code | Keep the legacy alpha-fit sampler until its approved bitmap hash can be preserved. `meaningfullyUniqueFrameCount()` and `frameStats()` may become neutral `groupDistinctFrames()`/`silhouetteMetrics()` only when Meat or another animation consumer needs the returned metrics. Every threshold and pass/fail decision remains product policy. |
@@ -1484,8 +1485,10 @@ duplicate social-preview HTML escaping helper was removed in favor of core.
 H4 was corrected after implementation review: indexed sibling-frame matching,
 numeric ordering, PNG loading/resizing, and composition moved to the public
 Node-only `tooling/frame-files` subpath, and Mushroom deleted `findFrameRaws()`
-and `composeStrip()` on core `aec6de4`. The product still injects its naming
-convention, root, frame-count policy, fallback, resize selection, and error copy. Recursive
+and `composeStrip()` on core `aec6de4`. A follow-up extraction moved the
+remaining indexed-animation coordinator into `prepareIndexedPngAnimation()`:
+the product now injects naming, root, dimensions, and resize selection and
+receives `frames`, `fallback`, or a typed neutral failure. Recursive
 generated-file traversal, newest raw-source selection, and archive listing
 remain local because their depth, cutoff, hashing, symlink, and selection
 contracts differ. H5's proposed distinct-frame,
@@ -1493,6 +1496,22 @@ silhouette-metric, boolean-grid-boundary, and alpha-threshold operations remain
 local/provisional for the same reason; product validators already call the
 lower-level core metrics directly. Do not reopen either item until a second
 consumer supplies fixtures for the same neutral result contract.
+
+#### Phase 8BG-J - Indexed Animation Preparation Coordinator
+
+Status: implemented 2026-07-15 on core `ad8104e`.
+
+- Move source-path decomposition, indexed sibling discovery, fallback-source
+  detection, expected frame-count validation, PNG composition, and final grid
+  dimension validation into the Node-only core tooling API.
+- Return structured `frames`, `fallback`, and typed failure outcomes so another
+  game can use the same state machine without copying Mushroom branches or
+  Mushroom-facing remediation text.
+- Keep app-facing output paths, deterministic file publication, transparency
+  thresholds, catalog fields, and result labels in each consumer.
+- Verify direct core fixtures for every outcome, Mushroom production-script
+  behavior, both game suites/builds, package dry-run, script documentation, and
+  the hub one-SHA consumer gate.
 
 H6 verification passed for core tests and package dry-run, Mushroom's full
 game-unit suite, script documentation, artifact/season byte-identical review
