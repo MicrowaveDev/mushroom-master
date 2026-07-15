@@ -1,6 +1,6 @@
 # Profile Currency And Core Extraction Plan
 
-> **Reading guide (updated 2026-07-13 core-port TODO correction).** This document
+> **Reading guide (updated 2026-07-16 shared Telegram correction).** This document
 > is a historical ship record plus forward plan, not a live status board. The
 > shipped, test-backed foundation is Phases **1-5, 6A-6C, 7, 7A, and 7B**.
 > Phase **6A-6C** shipped as a compatibility-safe neutral naming pass:
@@ -30,9 +30,13 @@
 > server logic into Geesome-style core modules first, then replacing DB,
 > Telegram, payment, catalog, policy, and app-wiring details with module config
 > and adapters. Final themes, route registration, product copy/locales, haptics,
-> art resolvers, Telegram wrappers, payment/adult-content policy, DB
-> connections, migrations, and deploy composition still stay in the product
-> repos.
+> art resolvers, bot credentials, command policy, payment/adult-content policy,
+> DB connections, migrations, and deploy composition still stay in the product
+> repos. Telegram is no longer a wholly product-local boundary now that both
+> games require bots: Bot API transport, Mini App init-data primitives, webhook
+> update normalization, retry/error handling, links/keyboards, game-score and
+> document/message operations should be stable core modules with injected
+> credentials, fetch, clock, and product handlers.
 > The 2026-07-07 server/shared recommendation sharpens the next movement:
 > most remaining `app/server` and `app/shared` code can move toward core, but
 > not all of it should become stable shared API in one step. Reusable logic,
@@ -41,9 +45,13 @@
 > `ports/mushroom` quarantine. Product runtime ownership still stays local:
 > `db.js` connection/dialect/sync/migration policy, `start.js` process
 > composition, concrete repositories, provider credentials/callbacks,
-> Telegram transport, product catalog data, wiki/lore text, generated art,
+> product Telegram configuration/commands, product catalog data, wiki/lore
+> text, generated art,
 > image metadata, home-field assets, deploy config, and final middleware/route
-> mounting.
+> mounting. The exception is provider-neutral Telegram infrastructure: shared
+> Bot API and Mini App primitives move to core, while each product retains its
+> bot token, webhook/deep-link configuration, commands, copy, persistence,
+> payment decisions, and content workflows.
 > The 2026-07-13 state after the settlement/ops extraction is: the
 > gameplay/profile/economy spine is core-backed through quarantined ports,
 > core release `7507580` contains the latest ports including auth/session,
@@ -104,8 +112,10 @@
 > (service facade + route factory + DTO/error shapers + repository contracts)
 > instead of only helper functions. Mushroom and Meat still own the concrete
 > repositories, runtime-mode config, framework mounting, middleware ordering,
-> env parsing, migrations, payment callbacks, Telegram/deep-link wiring, wiki
-> content, support policy, and static assets.
+> env parsing, migrations, payment callbacks, bot credentials, final
+> webhook/deep-link and HTTP route wiring, wiki content, support policy, and
+> static assets. Shared Telegram protocol and transport behavior follows the
+> narrower 2026-07-16 roadmap below.
 > See the **Post-Implementation Review** section for the verified state and
 > current remaining work. As of the latest implementation pass, **Phase 8A/8B**
 > is complete via `docs/game-core-runtime-contracts.md` and
@@ -151,7 +161,7 @@
 > facade as neutral utility and observability helpers, with Mushroom keeping
 > compatibility wrappers for legacy progression aliases, locale fallback, and
 > product-specific log context.
-> Product DB schemas, payment-provider adapters, Telegram routes, runtime
+> Product DB schemas, payment-provider policy, final Telegram routes, runtime
 > catalogs, artwork, content-policy gates, support operations, and final
 > route/page composition remain game-local adapters. The 2026-07-05 backend
 > planner slices moved roll settlement, duplicate-burn settlement, wallet
@@ -172,7 +182,7 @@
 > config, repository interfaces, route clients, and explicit adapters. Move
 > planners, DTO builders, server module factories, route factories, components,
 > composables, and adapterized page shells, not SQL transactions, concrete DB
-> models, provider callbacks, Telegram/adult-content policy, final product
+> models, provider callbacks, Telegram command/adult-content policy, final product
 > route registration, or product-owned assets.
 > **Phase
 > 11** produced the first playable `meat-master` core-consumer prototype.
@@ -562,7 +572,9 @@ Findings and plan corrections:
     sections from `create-app.js`, and generic bot/payment command helpers can
     move as route/module ports. `db.js`, `start.js`, concrete deployment
     config, middleware order, static serving, provider credentials/callbacks,
-    and Telegram transport remain composition concerns in Mushroom/Meat.
+    and final Telegram route/command policy remain composition concerns in
+    Mushroom/Meat. Shared Telegram protocol and transport primitives belong in
+    core once both games execute them.
 13. **Move files physically, then shrink wrappers.** For this lane the desired
     implementation is `mv` from Mushroom into core, a thin compatibility
     wrapper at the old path, fake-provider/core tests, Mushroom behavior tests,
@@ -644,32 +656,44 @@ Do not recreate moved files from agent memory. Copy instead of move only when a
 temporary compatibility copy is explicitly part of the migration, and remove or
 promote that copy during the stabilization step.
 
-### Current TODO Queue - Actualized 2026-07-15
+### Current TODO Queue - Actualized 2026-07-16
 
-The authoritative remaining queue is now intentionally short. Phase 8BG is
-closed on core `521c444`, Mushroom `9a8fb53`, Meat `35da71a`, and hub
-`003a5a7`; do not reopen broad server, frontend, or script extraction as launch
-work. Execute the remaining work in this order:
+The authoritative remaining queue is intentionally bounded. Phase 8BG remains
+closed; do not reopen broad server, frontend, or script extraction as launch
+work. A new shared Telegram lane is justified by demonstrated duplication:
+Mushroom already runs a bot gateway and Bot API delivery utilities, while Meat
+now also requires a production bot. Execute the remaining work in this order:
 
-1. **Prove the hosted Meat deployment with real infrastructure.** Deploy the
+1. **Extract and adopt the shared Telegram platform module.** Promote the
+   neutral parts of the existing quarantined `createTelegramBotGatewayPort()`
+   into a stable core Telegram facade, and move reusable Bot API transport,
+   target normalization, retry/error handling, message/document operations,
+   Mini App init-data verification, webhook update normalization, links,
+   keyboards, and game-score payloads behind injected adapters. Mushroom must
+   consume the stable module for its game bot and generic lore-bot delivery;
+   Meat must use it for a real `/start`/open-game bot and webhook path. Keep
+   tokens, webhook URLs/secrets, product commands/copy, user persistence,
+   payment completion policy, Mushroom channel filtering/OCR/PDF behavior, and
+   final route mounting local. Follow the detailed Telegram roadmap below.
+2. **Prove the hosted Meat deployment with real infrastructure.** Deploy the
    current app and Docker PostgreSQL configuration to the selected host, open
    it through the real Telegram bot/public URL, verify signed init data, and
    prove that the same profile and active run resume after an app restart. Add
    a repeatable hosted smoke for health, login, bootstrap, run start/resume,
    wallet read, and community status with dev login disabled.
-2. **Finish hosted data recovery and migration operations.** Introduce or
+3. **Finish hosted data recovery and migration operations.** Introduce or
    confirm versioned Sequelize migrations for every hosted table/index used by
    the release, record an off-host PostgreSQL backup and timed restore drill,
    and document forward-fix versus rollback policy. JSON snapshot buckets may
    remain for unpaid gameplay only; normalize searchable reconciliation,
    support, wallet, payment, and gacha records before enabling those features.
-3. **Close deploy security and operator controls.** Put auth and mutation rate
+4. **Close deploy security and operator controls.** Put auth and mutation rate
    limits in deploy-edge/shared storage before horizontal scaling, separate
    bot, support, admin, provider, and webhook credentials, retain structured
    audit logs, and perform token/webhook-secret rotation and least-privilege
    operator drills. Add user-visible tests for expired sessions and disabled
    production dev login.
-4. **Replace and approve the 12 Meat production assets.** The shared pipeline,
+5. **Replace and approve the 12 Meat production assets.** The shared pipeline,
    candidate-root review, visible alpha-edge diagnostics, provenance binding,
    and release gate now exist. The remaining failure is content: eight copied
    artifact PNGs and four character/profile outputs still carry
@@ -677,19 +701,19 @@ work. Execute the remaining work in this order:
    distinct Meat-owned outputs, review each one, update provenance and blocked
    hashes, and require `game:assets:validate` plus
    `game:assets:release-check` to pass before public launch.
-5. **Record two explicit first-release product decisions.** Approve compact
+6. **Record two explicit first-release product decisions.** Approve compact
    auto-pack as an intentional Meat UX difference or schedule Mushroom-style
    manual drag/rotate/save parity. Separately decide whether payments and gacha
    are disabled for release one. A deferral is acceptable only when deploy
    config proves the features cannot be enabled accidentally.
-6. **If money or simple gacha is in release one, run the paid pilot lane.** Do
+7. **If money or simple gacha is in release one, run the paid pilot lane.** Do
    fresh provider research at implementation time rather than freezing an old
    fee/policy recommendation. Validate Telegram Stars and the selected crypto
    path with real signed payloads and adult-content acceptance; connect
    payment-intent, provider-event, wallet, roll, burn, refund, idempotency, and
    reconciliation records; then complete age/content, terms, refund, dispute,
    tax, privacy, retention, odds-disclosure, support, and rollback review.
-7. **Treat additional core work as bounded hardening, not a feature lane.**
+8. **Treat other core work as bounded hardening, not a feature lane.**
    First, finish the demonstrated frame-grid compatibility gap: extend
    `composeFrameGrid()` with an explicit composite `mode`, forward `copy` to
    `compositeRaster()`, and migrate Mushroom strip assembly to
@@ -720,12 +744,121 @@ work. Execute the remaining work in this order:
    historical evidence. Keep submodule SHA plus changelog as the release
    identity; defer npm publication and semver migration until a consumer
    outside this hub creates a real distribution need.
-8. **Keep desktop, advanced economy, and speculative sharing in backlog.**
+9. **Keep desktop, advanced economy, and speculative sharing in backlog.**
    Electron installers, signing/notarization, offline action replay, account
    progress merging, friends/challenges/shared seasons beyond selected hosted
    scope, multi-item rarity guarantees beyond the shipped simple lane,
    duplicate currencies, marketplace/trading/escrow, and NFT/export policy
    require separate product, legal, security, and operations ownership.
+
+### Shared Telegram Module Roadmap - Added 2026-07-16
+
+The first target is deliberately small: both games can launch the same
+core-backed bot transport and webhook runtime with different credentials,
+commands, copy, links, persistence, and feature flags. This lane does not move
+Mushroom lore generation or Meat product behavior into core.
+
+#### T1 - Freeze Current Contracts And Split Ownership
+
+- Inventory Mushroom game-bot behavior in `app/server/bot-gateway.js`, generic
+  Bot API delivery in `src/lib/bot.js`, MTProto/channel access in
+  `src/lib/telegram.js`, and Meat's existing Mini App auth path.
+- Add behavior tests before movement for chat-target normalization, retry-after,
+  idempotent edit/delete handling, message/document upload, webhook setup,
+  `/start` parameters, inline keyboards, callback answers, game scores,
+  pre-checkout replies, and Mini App init-data freshness/signature validation.
+- Classify every function as `core transport`, `core protocol`, `product
+  command/policy`, or `Mushroom lore/channel workflow`. Do not move a function
+  merely because Telegram appears in its name.
+
+#### T2 - Establish Stable Core Telegram Facades
+
+- Add stable package routes such as `modules/telegram` for protocol DTOs and
+  `server/telegram` for Node transport/runtime composition; avoid new source
+  files at the core `src/` root.
+- Expose a configured Bot API client with injected `fetch`, token provider,
+  clock/sleep, logger, retry policy, and API base URL. Support JSON and
+  multipart calls without embedding product credentials or filesystem paths.
+- Expose neutral helpers for chat targets, deep links, start parameters,
+  keyboards, callback/pre-checkout responses, webhook info/setup, game scores,
+  text edits/deletes, and document delivery.
+- Promote reusable Mini App init-data parsing, signature checking, and freshness
+  evaluation from quarantined/product code into the stable facade. Return
+  structured verification results; products decide whether to reject, allow a
+  dev bypass, or map the Telegram identity into a player.
+- Keep the existing `server/ports/mushroom/platform` export as a compatibility
+  adapter until both consumers use the stable facade; then deprecate it instead
+  of maintaining two implementations.
+
+#### T3 - Make Webhook And Command Handling Configurable
+
+- Provide an update normalizer/router for messages, callback queries,
+  pre-checkout queries, and successful payments. Route to injected handlers and
+  return a neutral handled/ignored/error result.
+- Provide a command registry contract with injected command handlers and
+  locale-ready reply DTOs. Core may build Telegram payloads but must not own
+  Mushroom/Meat command text, support copy, terms links, game names, or feature
+  availability.
+- Keep HTTP route mounting, webhook-secret verification, request limits,
+  logging context, persistence transactions, and provider payment settlement
+  in each product's server module list.
+
+#### T4 - Migrate Mushroom Without Behavior Drift
+
+- Rebuild `app/server/bot-gateway.js` as a thin product configuration over the
+  stable core Telegram module. Preserve auth-code, game callback/score,
+  Telegram Stars, support-link, and webhook behavior with focused regressions.
+- Replace duplicated Bot API URL, retry, chat-target, send/edit/delete, and
+  document-upload logic in `src/lib/bot.js` with the stable core client. Keep
+  lore captions, output filenames, target selection, channel/admin policy, and
+  PDF filesystem reads local.
+- Split `src/lib/telegram.js`: generic MTProto iteration/retry/media helpers may
+  move only behind an injected client adapter and only when they do not force
+  the `telegram` package into browser-safe core exports. Keep generated-repost
+  filtering, channel resolution policy, OCR eligibility, archive paths, and
+  Mushroom lore decisions local.
+- Keep `src/commands/handlers/*` local. They are Mushroom command adapters, not
+  shared Telegram infrastructure; after transport extraction they should call
+  core-backed local services through the existing single command router.
+
+#### T5 - Add The Meat Bot As A Real Consumer
+
+- Add Meat-local bot config, webhook route/module entry, commands, locale copy,
+  game URL, and identity/session adapters over the same stable core facade.
+- Ship the minimum bot flow first: `/start`, open-game inline keyboard/deep
+  link, webhook secret validation, unknown-command fallback, and one authenticated
+  Mini App login/bootstrap handoff. Add game callback/score and payments only
+  when those features are enabled for Meat.
+- Prove runtime reuse with execution tests, not import smoke: fake Bot API tests
+  in core, Mushroom regression tests, Meat webhook/command tests, and one hosted
+  Telegram smoke using the real Meat bot.
+
+#### T6 - Stabilize, Document, And Release
+
+- Remove duplicate implementations only after golden behavior tests pass in
+  both consumers. Preserve temporary compatibility exports with explicit
+  deprecation notes and a removal condition.
+- Update core architecture/tooling docs, both consumer `AGENTS.md` files,
+  production runbooks, environment examples, module lists, and the core update
+  log. Document consumer npm aliases or server startup commands, not nested core
+  source paths.
+- Commit and push in dependency order: core, Mushroom and Meat pinned to the
+  same core SHA, then hub pointers. Run `npm run verify:backpack-core` plus both
+  bot-focused suites before closing the lane.
+
+#### Telegram Backlog After The First Shared Bot
+
+- Multi-bot registries, command middleware chains, localization catalogs, job
+  queues, distributed retry/rate limiting, webhook replay storage, media
+  streaming, and richer observability.
+- General MTProto/user-account archival as a stable core module. Keep it
+  provisional until Meat or another consumer needs channel history/media
+  workflows; the first Meat bot only proves Bot API reuse.
+- Telegram Stars refund/reversal automation and payment reconciliation beyond
+  the already shipped provider hooks; this remains part of the paid pilot lane.
+- Bot-managed social/friend/challenge notifications, scheduled season messages,
+  and admin moderation commands. These require explicit product and abuse-policy
+  design before becoming shared modules.
 
 Post-implementation guardrails from Phase 8BG:
 
@@ -835,7 +968,22 @@ queue. It is retained for traceability and is not a second active TODO list:
    decide whether compact auto-pack is accepted for Meat and whether the first
    public release includes payments or gacha; record those decisions as explicit
    enabled scope or deferrals before launch.
-12. **Next: prove the hosted Meat deployment.** Run real Telegram login through
+12. **Completed 2026-07-15: shared tooling CLI and command-surface cleanup.**
+   Core commit `c42595a` added the repository-targeted
+   `backpack-game-core` tooling CLI and routing guide; Mushroom and Meat now
+   invoke the same script-documentation validator through consumer npm aliases
+   instead of duplicate wrappers. Mushroom then physically reorganized its
+   script surface and lore commands, ending at commit `9c27154`: all lore npm
+   aliases route through one `src/commands/run.js`, four responsibility-grouped
+   handlers contain product command adapters, and the old one-file-per-command
+   launchers were removed. Script structure, manifest/docs coverage, router
+   failure behavior, and the full Mushroom suite are tested. The handlers stay
+   Mushroom-local; the new Telegram lane extracts their shared transport
+   dependencies rather than moving lore/OCR/PDF command policy into core.
+13. **Next: extract and adopt the shared Telegram platform module.** Follow
+   T1-T6 above, promote the existing quarantined gateway instead of creating a
+   parallel implementation, and make Meat a real bot/webhook consumer.
+14. **Then: prove the hosted Meat deployment.** Run real Telegram login through
    the public URL, restart and resume the same profile/run, and verify the
    Docker-hosted PostgreSQL path under production config. Add an automated
    production smoke that covers login, bootstrap, run start/resume, wallet
@@ -2062,9 +2210,9 @@ Server file recommendations:
 
 | Current file | Move direction | Product-owned boundary |
 | --- | --- | --- |
-| `app/server/auth.js` | Move as auth/session/bootstrap route and service ports, then promote neutral parts to `core.auth`. | Telegram verification, dev-login policy, sessions, rate limits, player lookup, and final paths. |
+| `app/server/auth.js` | Move as auth/session/bootstrap route and service ports, then promote neutral parts to `core.auth`; promote neutral Mini App signature/freshness primitives to the stable Telegram facade. | Dev-login/bypass policy, identity-to-player mapping, sessions, rate limits, player lookup, and final paths. |
 | `app/server/create-app.js` | Split route sections into route-group factories; keep only composition in the app. | Express app creation, middleware order, static serving, CORS/body policy, payment webhook raw-body placement, and module list assembly. |
-| `app/server/bot-gateway.js` | Split generic bot command/payment DTO helpers into core ports. | Telegram bot token transport, webhook receiver setup, Stars callbacks, terms/support copy, and product content policy. |
+| `app/server/bot-gateway.js` | ✅ Quarantined move completed 2026-07-13 as `createTelegramBotGatewayPort()`; next promote neutral transport/protocol behavior to stable `modules/telegram` and `server/telegram`, then adopt it in Meat. | Bot token and webhook/deep-link config, HTTP mounting/secret policy, auth/payment handlers, commands, terms/support copy, and product content policy. |
 | `app/server/wiki.js` | Move generic wiki route/search/cache helpers as a module port. | Mushroom lore text, unlock policy copy, images, and wiki content publication. |
 | `app/server/social-preview-cache.js` | Keep or promote the existing core social-preview orchestration module; move remaining reusable cache/warmup helpers. | Product renderer, filesystem paths, artwork, static URL policy, and preview copy. |
 | `app/server/game-data.js` | Do not move wholesale. Extract schemas, validators, projections, selection utilities, and catalog adapters. | Mushroom characters, artifacts, portrait variants, balance tables, lore/wiki/content ids, and art paths. |
@@ -2823,10 +2971,15 @@ gacha is enabled.
 
 #### P13.6 - Core Extraction Follow-Up
 
-Status: **Closed as an active lane on 2026-07-14.** The implementation kept DB transactions,
-route wiring, support policy, Telegram/deploy config, and product content in
-Meat. The first follow-up extracted provider-driven run-state summary DTO
-shaping into `modules/run`; Meat now passes product-local loadout totals,
+Status: **Broad lane closed 2026-07-14; narrowly reopened 2026-07-16 for the
+shared Telegram module.** The implementation kept DB transactions, route
+wiring, support policy, Telegram credentials/commands, deploy config, and
+product content in Meat. Meat's planned production bot now demonstrates a
+second runtime consumer for the Telegram protocol/transport behavior already
+used by Mushroom, so T1-T6 in the Current TODO Queue is an approved bounded
+extraction rather than speculative cleanup.** The first follow-up extracted
+provider-driven run-state summary DTO shaping into `modules/run`; Meat now
+passes product-local loadout totals,
 cost, and shop-row formatters through its `#shapeRun` adapter. The next
 follow-up extracted provider-neutral support lookup bundle and support mutation
 result DTO shaping into `modules/support`; Mushroom now delegates its support
@@ -2852,16 +3005,19 @@ sessions, middleware policy, player lookup, and final path choices stay
 product-local.
 The planned profile/run runtime, server route/module factories, first shared
 page shells/components, and Node script/raster/evidence tooling are now adopted
-by both games on one pinned core SHA. Remaining extraction is optional and must
-start from newly demonstrated duplication; it is not Phase 13 launch work.
+by both games on one pinned core SHA. Outside the explicitly reopened Telegram
+lane, remaining extraction is optional and must start from newly demonstrated
+duplication; it is not Phase 13 launch work.
 
 Goal: avoid duplicating Mushroom product logic in Meat while keeping product
 execution local.
 
 - Review Phase 12 Meat service code against Mushroom equivalents and extract
   remaining pure planners/DTOs only when both games can use them without
-  importing product routes, DB models, Telegram helpers, payment SDKs, art, or
-  CSS.
+  importing product routes, DB models, payment SDKs, art, or CSS. Shared
+  Telegram code is allowed only through the stable Node/server Telegram facade
+  with credentials and product handlers injected; browser-safe exports must
+  not acquire Node Telegram dependencies.
 - Candidate pure slices: bootstrap payload shaping and product settings
   bootstrap shaping. Run-state summary DTO shaping has started in core and is
   consumed by Meat. Support lookup and wallet/asset/run support mutation
@@ -2876,7 +3032,8 @@ execution local.
   consumed by both games while auth verification, session storage, and product
   identity policy stay local.
 - Keep non-core boundaries strict: DB transactions, concrete repositories,
-  provider callbacks, adult-content gates, Telegram deployment policy, product
+  provider callbacks, adult-content gates, Telegram credentials/deployment and
+  command policy, product
   catalogs, final route registration, and product policy stay in product repos.
   Shared route factories/service modules may move through the modular server
   lane once repositories, config, and runtime policies are injected.

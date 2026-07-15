@@ -13,6 +13,23 @@ shared modules stay in `lib/`. The scripts root contains only the README and
 command manifest, and the documentation checker enforces that layout without
 changing any public npm alias.
 
+Cross-repository tooling follow-up completed on 2026-07-15. Core commit
+`c42595a` now provides the repository-targeted `backpack-game-core` CLI and the
+shared script-documentation validator; Mushroom and Meat call it through their
+own npm aliases with an explicit consumer repository root. Product catalogs,
+queues, thresholds, mutation policy, and long-running workflow composition stay
+in each consumer.
+
+Mushroom lore-command follow-up completed on 2026-07-15 at commit `9c27154`.
+The old one-file-per-command launchers were removed: every lore npm alias now
+routes through `src/commands/run.js`, with product adapters grouped under
+`src/commands/handlers/`. Structure and unknown-command behavior are covered by
+tests. These handlers remain Mushroom-owned because they orchestrate lore,
+OCR, PDF, hashtag, and channel policy. The shared Telegram roadmap in
+[`profile-currency-and-core-extraction-plan.md`](profile-currency-and-core-extraction-plan.md)
+will move their reusable Bot API/Mini App dependencies into core without moving
+the product command policy itself.
+
 The supported command contract now lives in
 [`app/scripts/README.md`](../app/scripts/README.md) and
 [`app/scripts/command-manifest.json`](../app/scripts/command-manifest.json).
