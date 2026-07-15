@@ -689,16 +689,24 @@ work. Execute the remaining work in this order:
    payment-intent, provider-event, wallet, roll, burn, refund, idempotency, and
    reconciliation records; then complete age/content, terms, refund, dispute,
    tax, privacy, retention, odds-disclosure, support, and rollback review.
-7. **Treat additional core work as bounded hardening, not a feature lane.** Add
-   automated golden assertions for the five frozen Mushroom review PNGs and
-   Meat schema-v2 evidence if CI does not already retain them. Keep the legacy
-   hidden-RGB frame copy and alpha-fit sampler local while byte compatibility
-   requires them. The neutral alpha-fit API remains provisional until a new
-   consumer can adopt it without changing approved output. Version any future
-   evidence-schema change and test old-manifest verification/migration rather
-   than silently rewriting historical evidence. Keep submodule SHA plus
-   changelog as the release identity; defer npm publication and semver migration
-   until a consumer outside this hub creates a real distribution need.
+7. **Treat additional core work as bounded hardening, not a feature lane.**
+   First, finish the demonstrated frame-grid compatibility gap: extend
+   `composeFrameGrid()` with an explicit composite `mode`, forward `copy` to
+   `compositeRaster()`, and migrate Mushroom strip assembly to
+   `composeFrameGrid(frames, { rows: 1, columns: frames.length, mode: 'copy' })`.
+   Freeze transparent-pixel hidden RGB, alpha, dimensions, and final PNG hashes
+   before removing the local scan/manual row-copy branch. Keep indexed source
+   filename discovery, repo-root resolution, resize choice, and product error
+   copy local until Meat or another consumer demonstrates the same contract.
+   Also add automated golden assertions for the five frozen Mushroom review
+   PNGs and Meat schema-v2 evidence if CI does not already retain them. Keep the
+   legacy alpha-fit sampler local while byte compatibility requires it; the
+   neutral alpha-fit API remains provisional until a new consumer can adopt it
+   without changing approved output. Version any future evidence-schema change
+   and test old-manifest verification/migration rather than silently rewriting
+   historical evidence. Keep submodule SHA plus changelog as the release
+   identity; defer npm publication and semver migration until a consumer
+   outside this hub creates a real distribution need.
 8. **Keep desktop, advanced economy, and speculative sharing in backlog.**
    Electron installers, signing/notarization, offline action replay, account
    progress merging, friends/challenges/shared seasons beyond selected hosted
@@ -719,7 +727,8 @@ Post-implementation guardrails from Phase 8BG:
 - Do not remove a compatibility fallback merely to eliminate the final local
   loop. Hidden RGB, alpha threshold rounding, grid remainder placement, and
   max-alpha behavior are observable contracts and need golden tests before
-  replacement.
+  replacement. A fallback may move only when the neutral core API expresses
+  the same behavior explicitly, as planned for frame-grid `mode: 'copy'`.
 - Immutable generated evidence is self-hashed and verifiable; mutable verdict,
   invalidation, and operator state is atomic but must not be mislabeled as
   immutable evidence.
@@ -1392,6 +1401,21 @@ diagnostic raster in schema-v2 evidence. Hidden-RGB frame copying and legacy
 alpha-fit sampling remain narrowly local where replacing them changed
 compatibility hashes; the neutral alpha-fit API is tested and available for
 new consumers but is not substituted into that legacy producer yet.
+
+Post-completion finding 2026-07-15: the hidden-RGB strip fallback is not
+product policy. `composeFrameGrid()` currently hardcodes source-over even
+though `compositeRaster()` already supports byte-preserving `copy`. Add a
+`mode` option to the frame-grid API and declarations, validate supported modes,
+forward it during frame placement, and use `mode: 'copy'` for sprite-strip
+assembly. Tests must include fully transparent pixels with non-zero RGB,
+partially transparent pixels, multiple rows/columns, invalid modes, and the
+current Mushroom strip PNG hash. After those pass, delete only the local
+hidden-RGB detection and row-copy branch. Keep `findFrameRaws()` local because
+its `.source.png`/`.frame_N.source.png` convention, filesystem root, sorting
+contract, missing-directory behavior, and user-facing errors are currently
+demonstrated by one product only. Revisit a generic indexed-file discovery API
+only after a second consumer needs the same configurable prefix/suffix/index
+behavior.
 
 #### Completion Gates
 
