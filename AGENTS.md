@@ -6,7 +6,7 @@ This repository contains **two unrelated product surfaces**. Identify which one 
 
 | Surface | Where the code lives | Verify commands | Design / workflow rules |
 | --- | --- | --- | --- |
-| **Lore PDF pipeline** — Telegram archiver, OCR, lore generation, dossier rendering | `src/` (including lore-side scripts such as `analyze-pdf-structure.js`), `data/<channel>/` | `npm test` (unit), `npm run analyze:pdf-structure` (PDF structure check), `npm run regenerate -- --force` (full rerun), `npm run regenerate -- --force --skip-download` (rebuild from local sources) | "Source Review Workflow", "Hashtag Routing Rules", "Tagging Workflow", "PDF Review Workflow", "Renderer Design Rules" sections below |
+| **Lore PDF pipeline** — Telegram archiver, OCR, lore generation, dossier rendering | `src/commands/` (entry points), `src/lib/` (implementation), `src/config/`, `data/<channel>/` | `npm test` (unit), `npm run analyze:pdf-structure` (PDF structure check), `npm run regenerate -- --force` (full rerun), `npm run regenerate -- --force --skip-download` (rebuild from local sources) | "Source Review Workflow", "Hashtag Routing Rules", "Tagging Workflow", "PDF Review Workflow", "Renderer Design Rules" sections below |
 | **Mushroom Battles** — web game with Telegram Mini App integration (Vue frontend + Express backend + Playwright specs) | `web/` (Vue), `app/server/` (Express), `app/shared/` (shared code), `tests/game/` (specs), `web/public/artifacts/`, `web/public/season-ranks/`, `web/public/achievements/` | `npm test` (all unit), `npm run game:test` (game unit), `npm run game:test:e2e` (Playwright e2e), `npm run game:test:screens` / `:debug` (screenshots) | "UI Verification Rules", "Layout Assertion Rules", "E2E / Integration Test Design Rules", "Inventory Review Rules", `.agent/workflows/ui-design.md` |
 
 ## Script Organization
@@ -15,6 +15,13 @@ Treat npm aliases as the public script interface. Before adding, moving, or
 invoking game tooling, read [`app/scripts/README.md`](app/scripts/README.md) and
 use [`app/scripts/command-manifest.json`](app/scripts/command-manifest.json) for
 the machine-readable command and directory classification.
+
+For the lore surface, read [`src/commands/README.md`](src/commands/README.md)
+before searching for or invoking a command. Keep entry points grouped under
+`src/commands/{workflows,analysis,maintenance,diagnostics}`, reusable code under
+`src/lib`, and environment parsing under `src/config`. Never add executable
+files directly to `src/`, and use npm aliases rather than physical command
+paths in instructions or handoffs.
 
 - Put validation, provenance, preflight, audit, and release gates in
   `app/scripts/checks/`.

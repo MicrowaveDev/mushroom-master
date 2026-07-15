@@ -1,4 +1,4 @@
-import { setMessageHashtagsBatch, setMessageHashtagsById } from './lib/workflow.js';
+import { setMessageHashtagsBatch, setMessageHashtagsById } from '../../lib/workflow.js';
 
 function parseArgs(argv) {
   const args = { id: null, ids: [], hashtags: [] };
@@ -27,8 +27,8 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 
 if ((!Number.isInteger(args.id) || args.id <= 0) && args.ids.length === 0) {
-  process.stderr.write('Usage: node src/set-message-hashtags.js --id <messageId> --hashtags "#general_lore #character_thalla"\n');
-  process.stderr.write('   or: node src/set-message-hashtags.js --ids 3,4,5 --hashtags "#general_lore"\n');
+  process.stderr.write('Usage: npm run set-message-hashtags -- --id <messageId> --hashtags "#general_lore #character_thalla"\n');
+  process.stderr.write('   or: npm run set-message-hashtags -- --ids 3,4,5 --hashtags "#general_lore"\n');
   process.exit(1);
 }
 

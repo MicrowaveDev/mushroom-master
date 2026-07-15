@@ -1,4 +1,4 @@
-import { createUntaggedRoutingAuditReport } from './lib/workflow.js';
+import { createUntaggedRoutingAuditReport } from '../../lib/workflow.js';
 
 createUntaggedRoutingAuditReport().then((result) => {
   process.stdout.write(

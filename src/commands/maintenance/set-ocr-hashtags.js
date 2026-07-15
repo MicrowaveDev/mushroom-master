@@ -1,7 +1,7 @@
-import { clearMessageHashtagsBatch } from './lib/workflow.js';
+import { setOcrHashtagsBatch } from '../../lib/workflow.js';
 
 function parseArgs(argv) {
-  const args = { ids: [] };
+  const args = { ids: [], hashtags: [] };
   for (let index = 0; index < argv.length; index += 1) {
     const part = argv[index];
     if (part === '--ids') {
@@ -9,6 +9,12 @@ function parseArgs(argv) {
         .split(',')
         .map((value) => Number(value.trim()))
         .filter((value) => Number.isInteger(value) && value > 0);
+      index += 1;
+    } else if (part === '--hashtags') {
+      args.hashtags = String(argv[index + 1] || '')
+        .split(/\s+/u)
+        .map((tag) => tag.trim())
+        .filter(Boolean);
       index += 1;
     }
   }
@@ -18,16 +24,18 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 
 if (args.ids.length === 0) {
-  process.stderr.write('Usage: node src/clear-message-hashtags.js --ids 3,4,5\n');
+  process.stderr.write('Usage: npm run set-ocr-hashtags -- --ids 5,6,7 --hashtags "#general_lore #character_thalla"\n');
   process.exit(1);
 }
 
-clearMessageHashtagsBatch(args.ids).then((results) => {
+setOcrHashtagsBatch(
+  args.ids.map((sourceMessageId) => ({ sourceMessageId, hashtags: args.hashtags }))
+).then((results) => {
   const lines = results.map((result) => {
     if (!result.ok) {
-      return `Failed ${result.messageId}: ${result.error}`;
+      return `Failed ${result.sourceMessageId}: ${result.error}`;
     }
-    return `Cleared ${result.messageId}${result.processed?.messageFile ? ` -> ${result.processed.messageFile}` : ''}`;
+    return `Updated OCR ${result.sourceMessageId} -> ${result.generatedFile}`;
   });
   process.stdout.write(`${lines.join('\n')}\n`);
 }).catch((error) => {

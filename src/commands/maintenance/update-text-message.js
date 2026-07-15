@@ -1,4 +1,4 @@
-import { updateTextMessageById } from './lib/workflow.js';
+import { updateTextMessageById } from '../../lib/workflow.js';
 
 function parseArgs(argv) {
   const args = { id: null, text: null };
@@ -18,7 +18,7 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 
 if (!Number.isInteger(args.id) || args.id <= 0 || args.text == null) {
-  process.stderr.write('Usage: node src/update-text-message.js --id <messageId> --text <newText>\n');
+  process.stderr.write('Usage: npm run update-text-message -- --id <messageId> --text <newText>\n');
   process.exit(1);
 }
 

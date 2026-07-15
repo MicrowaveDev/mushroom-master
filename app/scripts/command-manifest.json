@@ -38,7 +38,7 @@
       "id": "lore-maintenance",
       "lifecycle": "operational",
       "mutation": "data",
-      "commands": ["fetch", "regenerate", "update-text-message", "set-message-hashtags", "set-ocr-hashtags", "clear-message-hashtags", "backfill-posted-message-ids", "rebuild-ocr-reposts", "clean-text-duplicates", "analyze:lore-prompt", "analyze:pdf-structure", "audit:untagged"]
+      "commands": ["fetch", "regenerate", "update-text-message", "set-message-hashtags", "set-ocr-hashtags", "clear-message-hashtags", "backfill-posted-message-ids", "rebuild-ocr-reposts", "clean-text-duplicates", "analyze:lore-prompt", "analyze:pdf-structure", "audit:untagged", "debug:history", "debug:message"]
     },
     {
       "id": "game-runtime",

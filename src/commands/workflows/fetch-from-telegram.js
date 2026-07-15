@@ -1,4 +1,4 @@
-import { runIncrementalFetch } from './lib/workflow.js';
+import { runIncrementalFetch } from '../../lib/workflow.js';
 
 runIncrementalFetch().then((result) => {
   process.stdout.write(

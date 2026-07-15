@@ -1,10 +1,10 @@
 import path from 'node:path';
 import { config as dotenvConfig } from 'dotenv';
-import { config as defaultConfig } from './config.js';
-import { normalizeRenderTemplate, renderMarkdownToHtmlAndPdf } from './lib/render.js';
-import { sendPdfViaBot } from './lib/bot.js';
-import { ensureChannelDirs, readMarkdown, slugify, writeMarkdown } from './lib/storage.js';
-import { createWorkflowContext, disposeWorkflowContext } from './lib/workflow.js';
+import { config as defaultConfig } from '../config/index.js';
+import { normalizeRenderTemplate, renderMarkdownToHtmlAndPdf } from './render.js';
+import { sendPdfViaBot } from './bot.js';
+import { ensureChannelDirs, readMarkdown, slugify, writeMarkdown } from './storage.js';
+import { createWorkflowContext, disposeWorkflowContext } from './workflow.js';
 
 dotenvConfig();
 

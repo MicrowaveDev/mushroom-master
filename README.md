@@ -132,7 +132,10 @@ Current lore output status:
   - supporting subsections such as overview, appearance, abilities/traits, residence/domain (`Обитель и владения`), motives/role, and relationships/story hooks when supported by the source material
   - character images placed at the start of each character section
 
-The repo currently implements these workflows:
+The repo currently implements these workflows. Their supported aliases,
+ownership boundaries, and physical routing are documented in
+[`src/commands/README.md`](src/commands/README.md); invoke the aliases below
+rather than files under `src/commands/` directly.
 
 - `npm run fetch`
   - incremental new-message processing

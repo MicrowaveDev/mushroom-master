@@ -1,4 +1,4 @@
-import { createLorePromptAnalysisReport } from './lib/workflow.js';
+import { createLorePromptAnalysisReport } from '../../lib/workflow.js';
 
 createLorePromptAnalysisReport().then((result) => {
   process.stdout.write(`Lore prompt analysis report: ${result.reportPath}\n`);

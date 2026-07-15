@@ -1,4 +1,4 @@
-import { createPdfStructureAnalysisReport } from './lib/workflow.js';
+import { createPdfStructureAnalysisReport } from '../../lib/workflow.js';
 
 createPdfStructureAnalysisReport().then((result) => {
   process.stdout.write(`PDF structure analysis report: ${result.reportPath}\n`);

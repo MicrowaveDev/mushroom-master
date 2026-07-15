@@ -202,9 +202,11 @@ Node test entry point.
 ## Maintain Lore Imports
 
 The unprefixed `fetch`, `regenerate`, message/hashtag, repost, duplicate-cleaning,
-analysis, and audit commands belong to the older Telegram lore ingestion surface.
-They are operational and can mutate imported data. Inspect the corresponding
-`src/*.js` entry point before use; they are not game image pipeline commands.
+analysis, audit, and debug commands belong to the Telegram lore ingestion
+surface. They are routed under `src/commands/` and some can mutate live Telegram
+messages or imported data. Read the
+[`Lore Command Routing`](../../src/commands/README.md) guide and use npm aliases;
+they are not game image pipeline or core CLI commands.
 
 <!-- command-family:repository-tools -->
 ## Repository Tools

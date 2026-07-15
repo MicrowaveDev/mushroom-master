@@ -49,6 +49,31 @@ test('[scripts] entry points are grouped by responsibility', () => {
   assert.deepEqual(directories, ['checks', 'generation', 'lib', 'operations', 'runners', 'workflows']);
 });
 
+test('[scripts] lore commands are grouped and leave the src root implementation-free', () => {
+  const sourceRoot = path.join(repoRoot, 'src');
+  const rootFiles = fs.readdirSync(sourceRoot, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name);
+  const commandDirectories = fs.readdirSync(path.join(sourceRoot, 'commands'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  assert.deepEqual(rootFiles, []);
+  assert.deepEqual(commandDirectories, ['analysis', 'diagnostics', 'maintenance', 'workflows']);
+
+  const packageJson = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  const loreCommands = packageJson.scripts;
+  for (const command of [
+    'fetch', 'regenerate', 'update-text-message', 'set-message-hashtags',
+    'set-ocr-hashtags', 'clear-message-hashtags', 'backfill-posted-message-ids',
+    'rebuild-ocr-reposts', 'clean-text-duplicates', 'analyze:lore-prompt',
+    'analyze:pdf-structure', 'audit:untagged', 'debug:history', 'debug:message'
+  ]) {
+    assert.match(loreCommands[command], /^node src\/commands\//, command);
+  }
+});
+
 test('[scripts] Playwright runner builds suite arguments and isolated environment', () => {
   assert.deepEqual(parsePlaywrightRunnerArgs(['--suite=screens', '--debug']), {
     suite: 'screens',
@@ -126,5 +151,5 @@ test('[scripts] documentation and manifest cover the supported command surface',
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Script documentation OK: 76 commands in 9 families and 6 directories/);
+  assert.match(result.stdout, /Script documentation OK: 78 commands in 9 families and 6 directories/);
 });

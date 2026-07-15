@@ -1,9 +1,9 @@
-import { backfillPostedMessageIds } from './lib/workflow.js';
+import { cleanDuplicateTextMessages } from '../../lib/workflow.js';
 
-backfillPostedMessageIds().then((result) => {
+cleanDuplicateTextMessages().then((result) => {
   process.stdout.write(
     [
-      `Updated ${result.repaired.length} OCR metadata records.`,
+      `Cleaned ${result.changedIds.length} text messages.`,
       `Report: ${result.reportPath}`
     ].join('\n') + '\n'
   );

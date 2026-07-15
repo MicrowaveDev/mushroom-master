@@ -1,5 +1,5 @@
-import { config } from './config.js';
-import { createTelegramClient, fetchChannelMessages, getChannelEntity } from './lib/telegram.js';
+import { config } from '../../config/index.js';
+import { createTelegramClient, fetchChannelMessages, getChannelEntity } from '../../lib/telegram.js';
 
 async function main() {
   const limit = Number(process.argv[2] || config.messageLimit);

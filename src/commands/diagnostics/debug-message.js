@@ -1,10 +1,10 @@
-import { config } from './config.js';
-import { createTelegramClient, getChannelEntity } from './lib/telegram.js';
+import { config } from '../../config/index.js';
+import { createTelegramClient, getChannelEntity } from '../../lib/telegram.js';
 
 async function main() {
   const messageId = Number(process.argv[2]);
   if (!Number.isInteger(messageId) || messageId <= 0) {
-    throw new Error('Usage: node src/debug-message.js <message-id>');
+    throw new Error('Usage: npm run debug:message -- <message-id>');
   }
 
   const telegram = await createTelegramClient({

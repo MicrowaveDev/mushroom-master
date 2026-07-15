@@ -15,7 +15,7 @@ function readArgValue(name) {
 
 async function main() {
   if (renderExistingMarkdown) {
-    const { renderExistingLoreMarkdown } = await import('./render-existing-lore.js');
+    const { renderExistingLoreMarkdown } = await import('../../lib/render-existing-lore.js');
     const result = await renderExistingLoreMarkdown({
       args: argv,
       sendPdf: !skipBot
@@ -36,7 +36,7 @@ async function main() {
     return;
   }
 
-  const { runFullRegeneration } = await import('./lib/workflow.js');
+  const { runFullRegeneration } = await import('../../lib/workflow.js');
   const result = await runFullRegeneration(undefined, {
     force,
     skipDownload,

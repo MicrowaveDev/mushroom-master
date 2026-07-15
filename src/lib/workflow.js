@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { config as defaultConfig } from '../config.js';
+import { config as defaultConfig } from '../config/index.js';
 import { createOpenAiClient, analyzeLorePromptReport } from './openai.js';
 import { deleteMessageViaBot, editTextViaBot, sendTextViaBot } from './bot.js';
 import { renderMarkdownToHtmlAndPdf } from './render.js';

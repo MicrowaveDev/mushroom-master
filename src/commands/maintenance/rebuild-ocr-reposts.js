@@ -1,4 +1,4 @@
-import { rebuildOcrReposts } from './lib/workflow.js';
+import { rebuildOcrReposts } from '../../lib/workflow.js';
 
 rebuildOcrReposts().then((result) => {
   process.stdout.write(
