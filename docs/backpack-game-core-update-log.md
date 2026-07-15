@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `04abe9d`
-- core short SHA: `04abe9d`
-- core commit: `Add support and gacha admin route groups`
-- runtime/API baseline: `04abe9d` (`Add support and gacha admin route groups`)
-- game pointer commit: `b379a16` (`Adopt shared admin routes`)
+- core SHA: `c42595a`
+- core short SHA: `c42595a`
+- core commit: `feat: add repository-targeted tooling CLI`
+- runtime/API baseline: `c42595a` (`feat: add repository-targeted tooling CLI`)
+- game pointer commit: `38bd152` (`chore: route shared scripts through core CLI`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-15 | `38bd152` | `c42595a` | Repository-targeted tooling CLI and routing guide | Core now exposes the `backpack-game-core` command router, requires `--repo-root` for consumer-targeted commands, and documents which scripts are universal CLI commands, configured library-backed wrappers, or product-only operations. Mushroom and Meat replace their duplicate script-documentation wrappers with the same local npm alias while retaining product catalogs, thresholds, queues, and mutation policy locally. |
 | 2026-07-13 | `3a5b860` | `1529358` | Shared run runtime and run-summary page | Mushroom executes `run-runtime/v1` across real run routes and keeps a thin locale/state adapter for the physically moved `RunSummaryScreen`. Meat pins the same core SHA and executes the runtime over its snapshot store while visibly rendering the shared page after run completion. Full cross-consumer verification passed. |
 | 2026-07-13 | `b379a16` | `04abe9d` | Complete server feature route groups | Mushroom now mounts social, run, support-admin, and gacha-admin routes through core descriptors in addition to auth, bot, wiki, profile, wallet, and assets. The gacha item API now distinguishes single-item `POST` from bulk replacement `PUT`. |
 | 2026-07-13 | `31cb833` | `bb0744d` | Profile, wallet, and asset route groups | Mushroom mounts profile/settings/active-character, wallet state/bundles/purchase-intent, and asset catalog/odds/roll/burn/purchase/equip through core descriptors. Product handlers, payment webhooks, policy values, and final Express assembly stay local. |
