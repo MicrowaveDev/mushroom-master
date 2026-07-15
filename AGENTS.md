@@ -17,11 +17,12 @@ use [`app/scripts/command-manifest.json`](app/scripts/command-manifest.json) for
 the machine-readable command and directory classification.
 
 For the lore surface, read [`src/commands/README.md`](src/commands/README.md)
-before searching for or invoking a command. Keep entry points grouped under
-`src/commands/{workflows,analysis,maintenance,diagnostics}`, reusable code under
-`src/lib`, and environment parsing under `src/config`. Never add executable
-files directly to `src/`, and use npm aliases rather than physical command
-paths in instructions or handoffs.
+before searching for or invoking a command. Keep `src/commands/run.js` as the
+single executable router, group implementations under `src/commands/handlers`,
+put reusable code under `src/lib`, and keep environment parsing under
+`src/config`. Do not add one launcher file per npm alias or executable files
+directly to `src/`; use npm aliases rather than physical command paths in
+instructions or handoffs.
 
 - Put validation, provenance, preflight, audit, and release gates in
   `app/scripts/checks/`.

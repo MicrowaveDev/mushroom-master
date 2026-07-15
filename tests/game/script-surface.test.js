@@ -54,13 +54,20 @@ test('[scripts] lore commands are grouped and leave the src root implementation-
   const rootFiles = fs.readdirSync(sourceRoot, { withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name);
-  const commandDirectories = fs.readdirSync(path.join(sourceRoot, 'commands'), { withFileTypes: true })
+  const commandsRoot = path.join(sourceRoot, 'commands');
+  const commandEntries = fs.readdirSync(commandsRoot, { withFileTypes: true });
+  const commandFiles = commandEntries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+  const commandDirectories = commandEntries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
 
   assert.deepEqual(rootFiles, []);
-  assert.deepEqual(commandDirectories, ['analysis', 'diagnostics', 'maintenance', 'workflows']);
+  assert.deepEqual(commandFiles, ['README.md', 'run.js']);
+  assert.deepEqual(commandDirectories, ['handlers']);
+  assert.deepEqual(fs.readdirSync(path.join(commandsRoot, 'handlers')).sort(), [
+    'analysis.js', 'diagnostics.js', 'maintenance.js', 'workflows.js'
+  ]);
 
   const packageJson = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
   const loreCommands = packageJson.scripts;
@@ -70,8 +77,19 @@ test('[scripts] lore commands are grouped and leave the src root implementation-
     'rebuild-ocr-reposts', 'clean-text-duplicates', 'analyze:lore-prompt',
     'analyze:pdf-structure', 'audit:untagged', 'debug:history', 'debug:message'
   ]) {
-    assert.match(loreCommands[command], /^node src\/commands\//, command);
+    assert.equal(loreCommands[command], `node src/commands/run.js ${command}`);
   }
+});
+
+test('[scripts] lore command router rejects unknown aliases without loading a handler', () => {
+  const result = spawnSync(process.execPath, ['src/commands/run.js', 'not-a-command'], {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /Unknown lore command: not-a-command/);
+  assert.match(result.stderr, /Available commands:/);
 });
 
 test('[scripts] Playwright runner builds suite arguments and isolated environment', () => {

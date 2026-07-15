@@ -1,19 +1,22 @@
 # Lore Command Routing
 
 This directory contains Mushroom's product-specific Telegram and lore pipeline
-entry points. Run commands from the repository root through npm aliases. Do not
-invoke files here directly and do not move these commands to Backpack Game Core:
+command router. Every npm alias delegates to the single `run.js` entry point;
+grouped handler modules contain the implementation. Run commands from the
+repository root through npm aliases. Do not invoke files here directly and do
+not move these commands to Backpack Game Core:
 they depend on Mushroom lore formats, Telegram messages, OCR reposts, dossier
 rendering, bot delivery, and product environment variables.
 
 ## Directory Routing
 
-| Directory | Responsibility | Commands |
+| Module | Responsibility | Commands |
 | --- | --- | --- |
-| `workflows/` | End-to-end Telegram fetch and lore regeneration | `fetch`, `regenerate` |
-| `analysis/` | Read-only prompt, PDF structure, and routing reports | `analyze:lore-prompt`, `analyze:pdf-structure`, `audit:untagged` |
-| `maintenance/` | Telegram message, hashtag, OCR repost, and duplicate repair operations | `update-text-message`, `set-message-hashtags`, `set-ocr-hashtags`, `clear-message-hashtags`, `backfill-posted-message-ids`, `rebuild-ocr-reposts`, `clean-text-duplicates` |
-| `diagnostics/` | Narrow live Telegram inspection | `debug:history`, `debug:message` |
+| `run.js` | Argument routing plus shared error and exit handling | All lore aliases |
+| `handlers/workflows.js` | End-to-end Telegram fetch and lore regeneration | `fetch`, `regenerate` |
+| `handlers/analysis.js` | Read-only prompt, PDF structure, and routing reports | `analyze:lore-prompt`, `analyze:pdf-structure`, `audit:untagged` |
+| `handlers/maintenance.js` | Telegram message, hashtag, OCR repost, and duplicate repair operations | `update-text-message`, `set-message-hashtags`, `set-ocr-hashtags`, `clear-message-hashtags`, `backfill-posted-message-ids`, `rebuild-ocr-reposts`, `clean-text-duplicates` |
+| `handlers/diagnostics.js` | Narrow live Telegram inspection | `debug:history`, `debug:message` |
 
 Reusable implementation belongs in `src/lib/`. Environment parsing belongs in
 `src/config/`. The `src/` root must contain directories only; do not add command
