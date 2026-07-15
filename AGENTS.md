@@ -59,6 +59,12 @@ first, then stage the nested submodule pointer plus any `package-lock.json` /
 adapter changes in `mushroom-master`; do not hand off with only a dirty nested
 submodule pointer.
 
+Before searching or adding core code, route the concern through
+`vendor/backpack-game-core/docs/architecture-routing.md`. Prefer its domain
+facades (`modules/loadout`, `modules/gacha`, `modules/wallet`, and so on), keep
+consumer imports on package exports, and do not add implementation files to
+the core `src/` root.
+
 Cross-game runtime goals: when working on Mushroom Battles backend, storage,
 deploy config, shared-core adapters, or code that Meat should reuse, keep the
 two-mode target from
