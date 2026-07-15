@@ -698,8 +698,20 @@ work. Execute the remaining work in this order:
    before removing the local scan/manual row-copy branch. Keep indexed source
    filename discovery, repo-root resolution, resize choice, and product error
    copy local until Meat or another consumer demonstrates the same contract.
-   Also add automated golden assertions for the five frozen Mushroom review
-   PNGs and Meat schema-v2 evidence if CI does not already retain them. Keep the
+   Then complete only the residual script items proven by the 2026-07-15 audit:
+   add a MIME-aware file-to-data-URL helper used by Mushroom's three HTML
+   generators and Meat's production review; replace sparse sprite-sheet row
+   copies with `createRaster()` plus `compositeRaster({ mode: 'copy' })` where
+   golden output is exact; and design one configurable file-evidence discovery
+   primitive only if it can replace generated-image walking, newest raw-source
+   selection, and indexed frame listing without absorbing their product naming
+   rules. Keep roots, filename predicates, cutoffs, missing-file behavior, and
+   selection policy in each game. Do not promote frame-distinctness,
+   silhouette metrics, alpha-threshold proxy composition, or artifact
+   mask-clipping policy until a second product uses the same neutral result
+   contract; existing core primitives should be called directly in the
+   meantime. Also add automated golden assertions for the five frozen Mushroom
+   review PNGs and Meat schema-v2 evidence if CI does not already retain them. Keep the
    legacy alpha-fit sampler local while byte compatibility requires it; the
    neutral alpha-fit API remains provisional until a new consumer can adopt it
    without changing approved output. Version any future evidence-schema change
@@ -1416,6 +1428,51 @@ contract, missing-directory behavior, and user-facing errors are currently
 demonstrated by one product only. Revisit a generic indexed-file discovery API
 only after a second consumer needs the same configurable prefix/suffix/index
 behavior.
+
+#### Post-Completion Residual Script Audit - 2026-07-15
+
+The full remaining `app/scripts` tree was re-audited after Phase 8BG, including
+checks, generation, local libraries, operations, runners, and Home Field
+workflows. This does not reopen bulk extraction. It narrows the optional
+hardening queue to the mechanics below and records the ownership decision for
+everything else.
+
+| Residual code | Recommendation | Boundary and proof required |
+| --- | --- | --- |
+| `artifactImageDataUrl()`, `seasonImageDataUrl()`, Mushroom social-preview `imageDataUrl()`, and Meat production-review `dataUrl()` | Add a Node-only `fileDataUrl(filePath, { mime })` or `imageFileDataUrl()` export in core, with MIME inference for supported image extensions | This is already duplicated across both products. Product wrappers may retain catalog labels and missing-file messages; encoded in-memory diagnostic rasters continue to use `encodeDeterministicPng()` directly. Test PNG/JPEG/WebP MIME, empty files, missing files, and deterministic output. |
+| Hidden-RGB strip assembly in `produce-home-field-assets.js` | Complete the planned `composeFrameGrid(..., { mode: 'copy' })` change and remove the scan/manual row-copy branch after exact golden tests | This is a missing option on an existing neutral API. Keep `.source.png` and `.frame_N.source.png` discovery local. |
+| Sparse character placeholder placement and the chibi reference proxy | Prefer existing `createRaster()`, `cropRaster()`/`extractFrame()`, resize, and `compositeRaster({ mode: 'copy' })`/`opaque` primitives over local buffer allocation and row copies | Add no sprite-specific core API yet. Preserve legacy walk-frame replication, direction/row mapping, alpha cutoff, magenta reference color, and forced-alpha behavior in Mushroom. Introduce a neutral alpha-threshold transform only after another real adopter needs the same semantics. |
+| `generated-image-discovery.js`, `newestImagegenRawFor()`, `findFrameRaws()`, and archive raw-file listing | Propose a provisional `listFileEvidence()`/`discoverFiles()` primitive that walks to a bounded depth and returns path, mtime, bytes, and optional SHA-256; callers inject extension/name predicates and sorting | The traversal/evidence mechanics have several Mushroom call sites, but no second game consumer yet. Move only after fixtures prove unreadable-directory, symlink, depth, cutoff-boundary, ordering, and hashing behavior and Meat adopts it for candidate discovery. Temp roots, Codex paths, ids, prefix/suffix/index parsing, freshness decisions, and user-facing errors stay local. |
+| Artifact safe-canvas fit and frame/silhouette analysis | Reuse the existing core alpha-fit, frame-grid, `frameDifference()`, `alphaBounds()`, and connected-component APIs; add no duplicate helper merely to shorten local code | Keep the legacy alpha-fit sampler until its approved bitmap hash can be preserved. `meaningfullyUniqueFrameCount()` and `frameStats()` may become neutral `groupDistinctFrames()`/`silhouetteMetrics()` only when Meat or another animation consumer needs the returned metrics. Every threshold and pass/fail decision remains product policy. |
+| Artifact mask-edge clipping and raw-source subject aspect checks | Keep local | Grid-mask topology can later use a neutral boolean-grid boundary enumerator if a second domain needs it, but current occupancy rules, magenta-key predicate, drift allowance, exception ids, and remediation text are Mushroom artifact policy. |
+| `bitmap-image-toolkit.js`, `image-domain-metadata.js`, and `image-domain-provenance.js` | Keep as thin product adapters; optionally rename only if their responsibility becomes unclear | They inject `repoRoot` and provide stable local imports over already-shared core APIs. Removing them would spread root configuration through many commands without moving behavior. Add a comment/test rather than another abstraction. |
+| Repeated operation CLI helpers such as `argValue()`, flags, CSV parsing, and usage functions | Migrate commands incrementally to Node `util.parseArgs`; do not add a core CLI parser | Commands, aliases, defaults, exit codes, and support/operator messages remain product-owned. Shared wallet, gacha, and season behavior already lives in core services. |
+| Home Field procedural drawing, family synthesis, prompt/queue generation, candidate verdict/archive state, social-preview HTML, catalog grouping, and release wording | Keep local and retire obsolete prototype generators after production art replacement | These blocks contain visual direction, catalogs, paths, approval policy, or agent workflow state. Low-level raster/evidence calls may be shared, but the scripts themselves are not core modules. |
+| Dev server, Playwright, Python/imagegen, deployment, and long-lived process orchestration | Keep local | The bounded synchronous runner is already shared. Ports, lifecycle, runtime discovery, streaming, credentials, and host topology need a proven second-consumer lifecycle contract before any further extraction. |
+
+Optional hardening order, behind Hosted Telegram/web launch work:
+
+1. **8BG-H1 - Byte-preserving frame grids.** Ship `composeFrameGrid` copy mode,
+   migrate strip composition, and verify hidden RGB plus current PNG hashes.
+2. **8BG-H2 - Cross-game image embedding.** Add the file-to-data-URL helper,
+   adopt it in both products, remove four duplicate readers, and run HTML/browser
+   review checks.
+3. **8BG-H3 - Existing raster adoption.** Replace sparse sheet/proxy copy loops
+   with current core raster operations where output remains exact. Keep a local
+   compatibility path for thresholded proxy pixels if required.
+4. **8BG-H4 - Evidence-aware discovery, provisionally.** Freeze the four
+   discovery/listing contracts, design an injected generic primitive, and move
+   it only with a real Meat candidate-discovery adopter. Otherwise leave the
+   Mushroom helper local.
+5. **8BG-H5 - Validator cleanup without policy leakage.** Delete trivial local
+   aliases in favor of direct core calls. Promote distinct-frame or silhouette
+   metrics only with second-consumer fixtures; keep mask, magenta, catalog,
+   threshold, exception, and remediation policy in Mushroom.
+6. **8BG-H6 - Close and re-audit.** Run core tests/types/package dry-run,
+   Mushroom script docs and image pipelines, Meat production-review/browser
+   checks, both full builds/tests, and the hub one-SHA verifier. Confirm no core
+   source or public type contains Mushroom, spore, Thalla, Home Field, artifact
+   id, Codex temp-root, or product acceptance vocabulary.
 
 #### Completion Gates
 
