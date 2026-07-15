@@ -14,6 +14,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { repoRoot } from '../../shared/repo-root.js';
 import { readPngHeader } from '../lib/bitmap-image-toolkit.js';
+import { createFrameGridFromDimensions } from '@microwavedev/backpack-game-core/tooling/raster';
 
 const requiredReferencePath = '.agent/home-field-workspace/reference/thalla_chibi_turnaround.reference.png';
 const requiredStateSheetPath = '.agent/home-field-workspace/raw/thalla_chibi.states.source.png';
@@ -92,12 +93,15 @@ function completeStateSheetInfo(inputPath) {
     const abs = resolveInputPath(inputPath);
     const header = readPngHeader(abs);
     const sha256 = crypto.createHash('sha256').update(fs.readFileSync(abs)).digest('hex');
-    const cellWidth = header.width / 8;
-    const cellHeight = header.height / 4;
-    const complete = header.width % 8 === 0 &&
-      header.height % 4 === 0 &&
-      cellWidth === cellHeight &&
-      cellWidth >= 64;
+    let grid = null;
+    try {
+      grid = createFrameGridFromDimensions(header, { columns: 8, rows: 4 });
+    } catch {
+      // Product completeness below includes additional square/minimum-size policy.
+    }
+    const cellWidth = grid?.frameWidth ?? header.width / 8;
+    const cellHeight = grid?.frameHeight ?? header.height / 4;
+    const complete = Boolean(grid) && cellWidth === cellHeight && cellWidth >= 64;
     return {
       path: inputPath,
       width: header.width,

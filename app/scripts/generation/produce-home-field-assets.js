@@ -27,7 +27,7 @@ import {
   composePngFrameGrid,
   findIndexedFiles
 } from '@microwavedev/backpack-game-core/tooling/frame-files';
-import { averageRegionRgb, rgbDistance } from '@microwavedev/backpack-game-core/tooling/image-analysis';
+import { opaqueMatteMetrics } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 import {
   encodeDeterministicPng,
   readPngAsRgba,
@@ -39,9 +39,8 @@ import {
   blendRasterTowardAverage,
   compositeRaster,
   createRaster,
-  cropRaster,
-  resizeRasterHybrid,
-  resizeRasterNearest
+  cropRasterNormalized,
+  resizeRaster
 } from '@microwavedev/backpack-game-core/tooling/raster';
 import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import { validateAssets } from '../../shared/home-field/home-field-validator.js';
@@ -132,52 +131,19 @@ function printUsage(stream = console.error) {
   stream('    --quiet-terrain[=0.35] reduce broad generated lighting variation so repeats are less obvious');
 }
 
-function resizeRgba(srcImage, dstWidth, dstHeight, mode) {
-  return mode === 'nearest'
-    ? resizeRasterNearest(srcImage, dstWidth, dstHeight)
-    : resizeRasterHybrid(srcImage, dstWidth, dstHeight);
-}
-
-function cropCenterRgba(srcImage, ratio) {
-  if (!ratio || ratio >= 1) return srcImage;
-  const cropSize = Math.max(1, Math.floor(Math.min(srcImage.width, srcImage.height) * ratio));
-  const startX = Math.floor((srcImage.width - cropSize) / 2);
-  const startY = Math.floor((srcImage.height - cropSize) / 2);
-  return cropRaster(srcImage, { x: startX, y: startY, width: cropSize, height: cropSize });
-}
-
-function makeTerrainSeamless(image, margin = 48) {
-  return blendRasterOppositeEdges(image, { margin });
-}
-
-function quietTerrainContrast(image, amount) {
-  if (!amount) return image;
-  return blendRasterTowardAverage(image, amount);
-}
-
 function detectOpaqueCheckerboardMatte(image) {
-  const stats = alphaStats(image, { x: 0, y: 0, width: image.width, height: image.height });
-  if (stats.coverage < 0.985) return null;
-
-  const s = Math.max(4, Math.floor(Math.min(image.width, image.height) * 0.08));
-  const corners = [
-    averageRegionRgb(image, { x: 0, y: 0, width: s, height: s }),
-    averageRegionRgb(image, { x: image.width - s, y: 0, width: s, height: s }),
-    averageRegionRgb(image, { x: 0, y: image.height - s, width: s, height: s }),
-    averageRegionRgb(image, { x: image.width - s, y: image.height - s, width: s, height: s })
-  ];
-  const distances = [
-    rgbDistance(corners[0], corners[1]),
-    rgbDistance(corners[0], corners[2]),
-    rgbDistance(corners[1], corners[3]),
-    rgbDistance(corners[2], corners[3])
-  ];
-  const maxDistance = Math.max(...distances);
-  const avgBrightness = corners
-    .map((c) => (c[0] + c[1] + c[2]) / 3)
-    .reduce((sum, v) => sum + v, 0) / corners.length;
-  if (maxDistance >= 10 && maxDistance <= 70 && avgBrightness >= 70 && avgBrightness <= 210) {
-    return `opaque checkerboard-like matte detected in corners (max RGB distance ${maxDistance.toFixed(1)}); regenerate on a flat chroma-key background or pass --chroma-key`;
+  const metrics = opaqueMatteMetrics(image, {
+    alphaThreshold: 0,
+    cornerSize: Math.max(4, Math.floor(Math.min(image.width, image.height) * 0.08))
+  });
+  if (
+    metrics.alphaCoverage >= 0.985
+    && metrics.maximumCornerDistance >= 10
+    && metrics.maximumCornerDistance <= 70
+    && metrics.meanLuminance >= 70
+    && metrics.meanLuminance <= 210
+  ) {
+    return `opaque checkerboard-like matte detected in corners (max RGB distance ${metrics.maximumCornerDistance.toFixed(1)}); regenerate on a flat chroma-key background or pass --chroma-key`;
   }
   return null;
 }
@@ -268,11 +234,18 @@ function processStaticEntry(entry, opts) {
 
   let image = readPngAsRgba(stagedPath);
   if (opts.cropCenter && entry.type === 'terrain') {
-    image = cropCenterRgba(image, opts.cropCenter);
+    const side = Math.min(image.width, image.height) * opts.cropCenter;
+    image = cropRasterNormalized(image, {
+      center: { x: 0.5, y: 0.5 },
+      widthRatio: side / image.width,
+      heightRatio: side / image.height
+    }).image;
   }
   if (image.width !== entry.width || image.height !== entry.height) {
     if (opts.resize) {
-      image = resizeRgba(image, entry.width, entry.height, opts.resize);
+      image = resizeRaster(image, entry.width, entry.height, {
+        mode: opts.resize === 'nearest' ? 'nearest' : 'hybrid'
+      });
     } else {
       return {
         id: entry.id,
@@ -282,10 +255,10 @@ function processStaticEntry(entry, opts) {
     }
   }
   if (opts.seamlessTerrain && entry.type === 'terrain') {
-    image = makeTerrainSeamless(image);
+    image = blendRasterOppositeEdges(image, { margin: 48 });
   }
   if (opts.quietTerrain && entry.type === 'terrain') {
-    image = quietTerrainContrast(image, opts.quietTerrain);
+    image = blendRasterTowardAverage(image, opts.quietTerrain);
   }
 
   let alphaSummary = null;
@@ -449,7 +422,9 @@ function processCharacterPlaceholder(entry, opts = {}) {
     let frame = readPngRgba(path.join(rawDir, r.file));
     if (frame.width !== s.frameWidth || frame.height !== s.frameHeight) {
       if (opts.resize) {
-        frame = resizeRgba(frame, s.frameWidth, s.frameHeight, opts.resize);
+        frame = resizeRaster(frame, s.frameWidth, s.frameHeight, {
+          mode: opts.resize === 'nearest' ? 'nearest' : 'hybrid'
+        });
       } else {
         return {
           id: entry.id,

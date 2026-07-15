@@ -6861,3 +6861,43 @@ frontend adoption.
      policy.
    - Community clients beyond read-only leaderboard: friends, challenges,
      optional account linking, and shared seasons.
+93. Phase 8BG-I residual script extraction review. **Implemented 2026-07-15
+   in core commit `69976e8`:**
+   - Move normalized raster cropping, resize-mode dispatch, dimension-only
+     frame-grid geometry, detail normalization, frame distinctness clustering,
+     and mask-boundary alpha metrics into neutral typed core APIs. Adopt them
+     from Mushroom while retaining crop plans, animation row meanings,
+     artistic thresholds, artifact exceptions, and remediation copy locally.
+   - Delete local algorithm aliases when an existing core primitive already
+     provides the behavior: checkerboard analysis uses `opaqueMatteMetrics()`,
+     family color matching uses `shiftRasterRgb()`, and safe-canvas fitting
+     uses `fitRasterAlphaToCanvas()` after source-edge policy is checked.
+   - Keep `processStaticEntry()` as a product coordinator for now: source and
+     candidate routing, terrain-only transforms, catalog dimensions, alpha
+     acceptance, logging, and failure DTOs are Mushroom policy. Revisit a
+     transactional `preparePngAsset()` core pipeline only after Meat's real
+     production replacement flow supplies a second adapter and fixtures for
+     atomic promotion, transform ordering, and failed-output cleanup.
+   - Do not move `CODEX_HOME`, bundled Python, imagegen skill paths, or the
+     current external `remove_chroma_key.py` command into core. First build a
+     pure JS soft-matte/despill contract over `chromaKeyRaster()` and prove
+     output parity on representative artifact and Home Field fixtures. Until
+     then, consolidate that external integration only as a product adapter.
+   - Keep recursive generated-image discovery provisional until Meat adopts
+     the same bounded traversal contract. Indexed sibling frames are already
+     core; recursive roots, depth, cutoff equality, symlinks, hashes, newest
+     selection, and inaccessible-directory behavior require separate tests.
+   - Keep prompt/queue rendering, palette budgets, candidate verdict/archive
+     transitions, deployment topology, support/wallet SQL commands, and Home
+     Field preview scopes local. Standard CLI parsing should migrate toward
+     Node `util.parseArgs`; do not create a backpack-specific argument parser.
+   - Add mutation-intent/confirmation normalization to the operational backlog
+     only after the hosted release commands define one consistent dry-run and
+     apply contract. Operation names, actor authorization, audit evidence,
+     confirmation tokens, and mutations remain product-owned.
+   - Implementation moved six typed mechanics to core and adopted them from
+     Mushroom: normalized crop, resize dispatch, dimension-only frame grids,
+     detail normalization, frame-difference clustering, and mask-boundary alpha
+     metrics. Existing core matte metrics, RGB shifting, and alpha fitting now
+     replace their local algorithms. Product-specific coordinators and the
+     explicitly deferred chroma/discovery/command items above remain local.

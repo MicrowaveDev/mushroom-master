@@ -16,6 +16,7 @@ import {
 } from '../lib/bitmap-image-toolkit.js';
 import {
   chromaKeyRaster,
+  createFrameGridFromDimensions,
   cropRaster,
   resizeRasterHybrid
 } from '@microwavedev/backpack-game-core/tooling/raster';
@@ -91,16 +92,23 @@ function main() {
 
   let sheet = readPngAsRgba(sourceAbs);
   const sourceSize = `${sheet.width}x${sheet.height}`;
-  if ((sheet.width % COLS !== 0 || sheet.height % ROWS !== 0) && hasFlag('resize')) {
-    sheet = resizeFrame(sheet, COLS * FRAME_WIDTH, ROWS * FRAME_HEIGHT);
+  let grid;
+  try {
+    grid = createFrameGridFromDimensions(sheet, { columns: COLS, rows: ROWS });
+  } catch {
+    grid = null;
   }
-  if (sheet.width % COLS !== 0 || sheet.height % ROWS !== 0) {
+  if (!grid && hasFlag('resize')) {
+    sheet = resizeFrame(sheet, COLS * FRAME_WIDTH, ROWS * FRAME_HEIGHT);
+    grid = createFrameGridFromDimensions(sheet, { columns: COLS, rows: ROWS });
+  }
+  if (!grid) {
     console.error(`state sheet must divide into ${COLS}x${ROWS} cells, got ${sourceSize}; pass --resize for larger proportional source sheets`);
     process.exit(1);
   }
 
-  const cellWidth = sheet.width / COLS;
-  const cellHeight = sheet.height / ROWS;
+  const cellWidth = grid.frameWidth;
+  const cellHeight = grid.frameHeight;
   const keyRgb = chromaKey ? parseHexColor(chromaKey) : null;
   fs.mkdirSync(outputAbs, { recursive: true });
 

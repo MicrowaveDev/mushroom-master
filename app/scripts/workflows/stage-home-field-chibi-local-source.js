@@ -18,7 +18,12 @@ import {
   readPngHeader,
   repoRoot
 } from '../lib/bitmap-image-toolkit.js';
-import { createRaster, cropRaster, resizeRasterBox } from '@microwavedev/backpack-game-core/tooling/raster';
+import {
+  createFrameGridFromDimensions,
+  createRaster,
+  cropRaster,
+  resizeRasterBox
+} from '@microwavedev/backpack-game-core/tooling/raster';
 
 const COLS = 8;
 const ROWS = 4;
@@ -72,17 +77,16 @@ function assertNotCheckedInReference(absPath) {
 }
 
 function assertCompleteStateSheet(header, sourceLabel) {
-  const cellWidth = header.width / COLS;
-  const cellHeight = header.height / ROWS;
-  if (
-    header.width % COLS !== 0 ||
-    header.height % ROWS !== 0 ||
-    cellWidth !== cellHeight ||
-    cellWidth < 64
-  ) {
+  let grid;
+  try {
+    grid = createFrameGridFromDimensions(header, { columns: COLS, rows: ROWS });
+  } catch {
     throw new Error(`${sourceLabel} must be a complete ${COLS}x${ROWS} state sheet with square cells at least 64px; got ${header.width}x${header.height}`);
   }
-  return { cellWidth, cellHeight };
+  if (grid.frameWidth !== grid.frameHeight || grid.frameWidth < 64) {
+    throw new Error(`${sourceLabel} must be a complete ${COLS}x${ROWS} state sheet with square cells at least 64px; got ${header.width}x${header.height}`);
+  }
+  return { cellWidth: grid.frameWidth, cellHeight: grid.frameHeight };
 }
 
 function cropFrame(sheet, row, col, cellWidth, cellHeight) {

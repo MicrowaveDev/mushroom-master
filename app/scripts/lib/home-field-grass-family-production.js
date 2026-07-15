@@ -13,7 +13,11 @@ import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/
 import { averageRegionRgb } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 import {
   blendRasterOppositeEdges,
-  neutralizeRasterEdges
+  blendRasterTowardAverage,
+  cropRasterNormalized,
+  neutralizeRasterEdges,
+  resizeRaster,
+  shiftRasterRgb
 } from '@microwavedev/backpack-game-core/tooling/raster';
 import {
   encodeDeterministicPng,
@@ -24,11 +28,8 @@ import { repoRoot } from '../../shared/repo-root.js';
 import { validateAssets } from '../../shared/home-field/home-field-validator.js';
 import {
   allHomeFieldEntries as allEntries,
-  cropNormalizedSquare,
   ensureDir,
-  loadJson,
-  quietTerrainContrast,
-  resizeRgba
+  loadJson
 } from './home-field-family-production.js';
 
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
@@ -205,28 +206,12 @@ function smootherstep(t) {
   return x * x * x * (x * (x * 6 - 15) + 10);
 }
 
-function makeTerrainSeamless(image, margin = 48) {
-  return blendRasterOppositeEdges(image, { margin });
-}
-
 function averageRgb(image) {
   return averageRegionRgb(image);
 }
 
 function clampByte(n) {
   return Math.max(0, Math.min(255, Math.round(n)));
-}
-
-function matchAverageRgb(image, targetAvg, strength = 0.82) {
-  const avg = averageRgb(image);
-  const delta = targetAvg.map((value, index) => (value - avg[index]) * strength);
-  const rgba = Buffer.from(image.rgba);
-  for (let i = 0; i < rgba.length; i += 4) {
-    rgba[i + 0] = clampByte(rgba[i + 0] + delta[0]);
-    rgba[i + 1] = clampByte(rgba[i + 1] + delta[1]);
-    rgba[i + 2] = clampByte(rgba[i + 2] + delta[2]);
-  }
-  return { width: image.width, height: image.height, rgba };
 }
 
 function blendInteriorVariant(base, overlay, strength) {
@@ -332,7 +317,7 @@ function normalizeFamilyAverages(items) {
     avgs.reduce((sum, avg) => sum + avg[channel], 0) / avgs.length
   ));
   return items.map((item, index) => {
-    const normalized = matchAverageRgb(item.image, targetAvg);
+    const normalized = shiftRasterRgb(item.image, targetAvg, { strength: 0.82 });
     return {
       ...item,
       image: normalized,
@@ -395,11 +380,16 @@ export function produceGrassFamily(argv = process.argv.slice(2)) {
   let flatMinimalBaseAvg = null;
   for (const target of targets) {
     const plan = cropPlan.crops[target.id];
-    const { image: cropped, rect } = cropNormalizedSquare(source, plan);
+    const cropSide = Math.min(source.width, source.height) * plan.ratio;
+    const { image: cropped, rect } = cropRasterNormalized(source, {
+      center: plan.center,
+      widthRatio: cropSide / source.width,
+      heightRatio: cropSide / source.height
+    });
     if (cropPlan.flatMinimal && !flatMinimalBaseAvg) flatMinimalBaseAvg = averageRgb(cropped);
-    let image = resizeRgba(cropped, target.width, target.height);
-    if (!args.noSeamless) image = makeTerrainSeamless(image);
-    image = quietTerrainContrast(image, plan.quiet);
+    let image = resizeRaster(cropped, target.width, target.height, { mode: 'hybrid' });
+    if (!args.noSeamless) image = blendRasterOppositeEdges(image, { margin: 48 });
+    image = blendRasterTowardAverage(image, plan.quiet);
     if (cropPlan.flatMinimal) image = makeFlatMinimalGrass(target, plan, flatMinimalBaseAvg);
     prepared.push({ target, plan, image, rect });
   }

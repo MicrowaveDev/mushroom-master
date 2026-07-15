@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { atomicWriteJson } from '@microwavedev/backpack-game-core/tooling/evidence';
+import { normalizeRasterDetail } from '@microwavedev/backpack-game-core/tooling/raster';
 import { artifacts } from '../../server/game-data.js';
 import { getBagShape } from '../../shared/bag-shape.js';
 import {
@@ -52,72 +53,6 @@ function detailPolicyFor(shape) {
   };
 }
 
-function quantize(value, step) {
-  return Math.max(0, Math.min(255, Math.round(value / step) * step));
-}
-
-function pixelOffset(image, x, y) {
-  return (y * image.width + x) * 4;
-}
-
-function averageNeighbors(image, x, y, minimumAlpha) {
-  let totalWeight = 0;
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  const samples = [
-    [x - 1, y, 1],
-    [x + 1, y, 1],
-    [x, y - 1, 1],
-    [x, y + 1, 1],
-    [x - 1, y - 1, 0.5],
-    [x + 1, y - 1, 0.5],
-    [x - 1, y + 1, 0.5],
-    [x + 1, y + 1, 0.5]
-  ];
-  for (const [sampleX, sampleY, weight] of samples) {
-    if (sampleX < 0 || sampleX >= image.width || sampleY < 0 || sampleY >= image.height) continue;
-    const offset = pixelOffset(image, sampleX, sampleY);
-    const alpha = image.rgba[offset + 3];
-    if (alpha < minimumAlpha) continue;
-    totalWeight += weight;
-    r += image.rgba[offset] * weight;
-    g += image.rgba[offset + 1] * weight;
-    b += image.rgba[offset + 2] * weight;
-  }
-  if (!totalWeight) return null;
-  return [r / totalWeight, g / totalWeight, b / totalWeight];
-}
-
-function normalizeImage(image, policy) {
-  const next = Buffer.from(image.rgba);
-  for (let y = 0; y < image.height; y += 1) {
-    for (let x = 0; x < image.width; x += 1) {
-      const offset = pixelOffset(image, x, y);
-      const alpha = image.rgba[offset + 3];
-      if (alpha < policy.minimumAlpha) {
-        next[offset] = 0;
-        next[offset + 1] = 0;
-        next[offset + 2] = 0;
-        next[offset + 3] = 0;
-        continue;
-      }
-
-      const average = policy.neighborBlend > 0
-        ? averageNeighbors(image, x, y, policy.minimumAlpha)
-        : null;
-      for (let channel = 0; channel < 3; channel += 1) {
-        const source = image.rgba[offset + channel];
-        const blended = average
-          ? source * (1 - policy.neighborBlend) + average[channel] * policy.neighborBlend
-          : source;
-        next[offset + channel] = quantize(blended, policy.quantizeStep);
-      }
-    }
-  }
-  return { width: image.width, height: image.height, rgba: next };
-}
-
 function validateExpectedDimensions(artifact, image, shape) {
   const rows = shape.length || 1;
   const cols = shape[0]?.length || 1;
@@ -140,7 +75,7 @@ export function normalizeArtifact(artifact) {
   validateExpectedDimensions(artifact, image, shape);
   const policy = detailPolicyFor(shape);
   const before = fileSha256(imagePath);
-  const normalized = normalizeImage(image, policy);
+  const normalized = normalizeRasterDetail(image, policy);
   fs.writeFileSync(imagePath, encodeDeterministicPng(normalized));
   const after = fileSha256(imagePath);
   const invalidationPath = path.join(repoRoot, '.agent', 'artifact-image-workspace', 'processed', `${artifact.id}.normalization.json`);

@@ -175,10 +175,6 @@ function extractReferencePrompt() {
   return match[1].trimEnd();
 }
 
-function resizeRgba(srcImage, dstWidth, dstHeight) {
-  return resizeRasterBox(srcImage, dstWidth, dstHeight);
-}
-
 function writeBlockerNote({ verifierResult, paletteResult, normalized, promptSha }) {
   let auditSummary = 'palette audit JSON was not written';
   if (fs.existsSync(resolveRepoPath(auditPath))) {
@@ -289,7 +285,7 @@ function main() {
     if (opts.normalizeReference) {
       const [w, h] = opts.normalizeReference.split('x').map(Number);
       const src = readPngAsRgba(resolveRepoPath(apiSourcePath));
-      const resized = resizeRgba(src, w, h);
+      const resized = resizeRasterBox(src, w, h);
       fs.writeFileSync(resolveRepoPath(referencePath), encodeDeterministicPng(resized));
       normalized = true;
       console.log(`normalized API source ${apiSourcePath} to ${referencePath} (${w}x${h})`);

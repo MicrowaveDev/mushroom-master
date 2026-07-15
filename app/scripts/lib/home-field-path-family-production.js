@@ -11,6 +11,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
 import {
+  blendRasterTowardAverage,
+  cropRasterNormalized,
+  resizeRaster
+} from '@microwavedev/backpack-game-core/tooling/raster';
+import {
   encodeDeterministicPng,
   fileSha256,
   readPngAsRgba
@@ -19,11 +24,8 @@ import { repoRoot } from '../../shared/repo-root.js';
 import { validateAssets } from '../../shared/home-field/home-field-validator.js';
 import {
   allHomeFieldEntries as allEntries,
-  cropNormalizedSquare,
   ensureDir,
-  loadJson,
-  quietTerrainContrast,
-  resizeRgba
+  loadJson
 } from './home-field-family-production.js';
 
 const sharedDir = path.join(repoRoot, 'app', 'shared', 'home-field');
@@ -136,9 +138,14 @@ export function producePathFamily(argv = process.argv.slice(2)) {
   const outputs = [];
   for (const target of targets) {
     const plan = CROP_PLAN[target.id];
-    const { image: cropped, rect } = cropNormalizedSquare(source, plan);
-    let image = resizeRgba(cropped, target.width, target.height);
-    image = quietTerrainContrast(image, plan.quiet);
+    const cropSide = Math.min(source.width, source.height) * plan.ratio;
+    const { image: cropped, rect } = cropRasterNormalized(source, {
+      center: plan.center,
+      widthRatio: cropSide / source.width,
+      heightRatio: cropSide / source.height
+    });
+    let image = resizeRaster(cropped, target.width, target.height, { mode: 'hybrid' });
+    image = blendRasterTowardAverage(image, plan.quiet);
     const outAbs = path.join(outputRoot, target.outputPath);
     ensureDir(path.dirname(outAbs));
     fs.writeFileSync(outAbs, encodeDeterministicPng(image));

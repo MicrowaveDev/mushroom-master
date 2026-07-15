@@ -6,11 +6,11 @@ import {
   repoRoot,
   readPngRgba,
   readPngAsRgba,
-  alphaAt,
   alphaStats,
   resolveFreshAfterTimestamp
 } from '../lib/bitmap-image-toolkit.js';
 import { validateImagePolicy } from '@microwavedev/backpack-game-core/tooling/image-validation';
+import { analyzeMaskBoundaryAlpha } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 
 const artifactDir = path.join(repoRoot, 'web', 'public', 'artifacts');
 const artifactImageWorkspace = process.env.ARTIFACT_IMAGE_WORKSPACE
@@ -141,52 +141,6 @@ function edgePaddingFailures(artifact, image, total) {
   return failures;
 }
 
-function maskGapEdges(shape) {
-  const edges = [];
-  const rows = shape.length;
-  const cols = shape[0]?.length || 0;
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < cols; col += 1) {
-      if (!shape[row]?.[col]) continue;
-      const neighbors = [
-        { direction: 'left', emptyCol: col - 1, emptyRow: row },
-        { direction: 'right', emptyCol: col + 1, emptyRow: row },
-        { direction: 'top', emptyCol: col, emptyRow: row - 1 },
-        { direction: 'bottom', emptyCol: col, emptyRow: row + 1 }
-      ];
-      for (const edge of neighbors) {
-        if (
-          edge.emptyRow < 0
-          || edge.emptyRow >= rows
-          || edge.emptyCol < 0
-          || edge.emptyCol >= cols
-          || shape[edge.emptyRow]?.[edge.emptyCol]
-        ) {
-          continue;
-        }
-        edges.push({ col, row, ...edge });
-      }
-    }
-  }
-  return edges;
-}
-
-function longestTruthyRun(values) {
-  let longest = 0;
-  let current = 0;
-  let count = 0;
-  for (const value of values) {
-    if (value) {
-      current += 1;
-      count += 1;
-      longest = Math.max(longest, current);
-    } else {
-      current = 0;
-    }
-  }
-  return { longest, count };
-}
-
 function maskClippingFailures(image, shape, cellWidth, cellHeight) {
   const failures = [];
   const occupiedCells = shape.flat().filter(Boolean).length;
@@ -198,48 +152,23 @@ function maskClippingFailures(image, shape, cellWidth, cellHeight) {
     return failures;
   }
 
-  const stripPx = 4;
-  const alphaThreshold = 48;
   const maxStraightRunRatio = 0.60;
   const maxStraightCountRatio = 0.60;
-
-  for (const edge of maskGapEdges(shape)) {
-    const edgeLength = edge.direction === 'left' || edge.direction === 'right'
-      ? Math.round(cellHeight)
-      : Math.round(cellWidth);
-    const inset = Math.min(10, Math.floor(edgeLength * 0.08));
-    const samples = [];
-
-    for (let i = inset; i < edgeLength - inset; i += 1) {
-      let maxAlpha = 0;
-      for (let stripOffset = 0; stripOffset < stripPx; stripOffset += 1) {
-        let x;
-        let y;
-        if (edge.direction === 'left') {
-          x = Math.round(edge.col * cellWidth + stripOffset);
-          y = Math.round(edge.row * cellHeight + i);
-        } else if (edge.direction === 'right') {
-          x = Math.round((edge.col + 1) * cellWidth - 1 - stripOffset);
-          y = Math.round(edge.row * cellHeight + i);
-        } else if (edge.direction === 'top') {
-          x = Math.round(edge.col * cellWidth + i);
-          y = Math.round(edge.row * cellHeight + stripOffset);
-        } else {
-          x = Math.round(edge.col * cellWidth + i);
-          y = Math.round((edge.row + 1) * cellHeight - 1 - stripOffset);
-        }
-        maxAlpha = Math.max(maxAlpha, alphaAt(image, x, y));
-      }
-      samples.push(maxAlpha > alphaThreshold);
-    }
-
-    const { longest, count } = longestTruthyRun(samples);
-    const effectiveLength = samples.length || 1;
-    const runRatio = longest / effectiveLength;
-    const countRatio = count / effectiveLength;
+  const mask = {
+    width: shape[0]?.length || 0,
+    height: shape.length,
+    data: shape.flat().map(Boolean)
+  };
+  const metrics = analyzeMaskBoundaryAlpha(image, mask, {
+    stripWidth: 4,
+    alphaThreshold: 48
+  });
+  for (const edge of metrics.edges) {
+    const runRatio = edge.longestAboveThresholdRunRatio;
+    const countRatio = edge.aboveThresholdRatio;
     if (runRatio >= maxStraightRunRatio && countRatio >= maxStraightCountRatio) {
       failures.push(
-        `art appears hard-clipped against empty mask cell ${edge.emptyCol},${edge.emptyRow} from occupied cell ${edge.col},${edge.row} (${edge.direction} edge has ${formatPct(runRatio)} straight alpha run); regenerate/reprocess so the silhouette naturally avoids empty cells`
+        `art appears hard-clipped against empty mask cell ${edge.emptyColumn},${edge.emptyRow} from occupied cell ${edge.column},${edge.row} (${edge.direction} edge has ${formatPct(runRatio)} straight alpha run); regenerate/reprocess so the silhouette naturally avoids empty cells`
       );
     }
   }

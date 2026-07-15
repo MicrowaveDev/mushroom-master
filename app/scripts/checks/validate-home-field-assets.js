@@ -33,8 +33,8 @@ import {
   alphaBounds as coreAlphaBounds,
   averageEdgeRgb as coreAverageEdgeRgb,
   averageRegionRgb,
+  clusterFramesByDifference,
   connectedComponents,
-  frameDifference,
   frameHash as coreFrameHash,
   luminance,
   rgbDistance
@@ -292,31 +292,22 @@ function frameHash(image, frameWidth, frameHeight, row, col) {
   });
 }
 
-function frameDifferencePixels(image, frameWidth, frameHeight, rowA, colA, rowB, colB) {
-  return frameDifference(image, image, {
-    firstRect: { x: colA * frameWidth, y: rowA * frameHeight, width: frameWidth, height: frameHeight },
-    secondRect: { x: colB * frameWidth, y: rowB * frameHeight, width: frameWidth, height: frameHeight },
-    alphaThreshold: 24,
-    colorThreshold: 48,
-    visibleAlphaThreshold: 32
-  }).differentPixels;
-}
-
 function meaningfullyUniqueFrameCount(image, frameWidth, frameHeight, frames, minDifferentPixels = 28) {
-  const groups = [];
-  for (const frame of frames) {
-    const matchesExisting = groups.some((group) => frameDifferencePixels(
-      image,
-      frameWidth,
-      frameHeight,
-      frame.row,
-      frame.col,
-      group.row,
-      group.col
-    ) < minDifferentPixels);
-    if (!matchesExisting) groups.push(frame);
-  }
-  return groups.length;
+  return clusterFramesByDifference(
+    image,
+    frames.map((frame) => ({
+      x: frame.col * frameWidth,
+      y: frame.row * frameHeight,
+      width: frameWidth,
+      height: frameHeight
+    })),
+    {
+      minimumDifferentPixels: minDifferentPixels,
+      alphaThreshold: 24,
+      colorThreshold: 48,
+      visibleAlphaThreshold: 32
+    }
+  ).distinctCount;
 }
 
 function frameStats(image, frameWidth, frameHeight, row, col) {
