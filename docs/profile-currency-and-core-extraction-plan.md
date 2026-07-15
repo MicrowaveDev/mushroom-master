@@ -695,9 +695,10 @@ work. Execute the remaining work in this order:
    `compositeRaster()`, and migrate Mushroom strip assembly to
    `composeFrameGrid(frames, { rows: 1, columns: frames.length, mode: 'copy' })`.
    Freeze transparent-pixel hidden RGB, alpha, dimensions, and final PNG hashes
-   before removing the local scan/manual row-copy branch. Keep indexed source
-   filename discovery, repo-root resolution, resize choice, and product error
-   copy local until Meat or another consumer demonstrates the same contract.
+   before removing the local scan/manual row-copy branch. Move the neutral
+   indexed-file matching, numeric ordering, PNG loading/resizing, and frame-grid
+   composition into a Node-only core subpath. Keep the source filename pattern,
+   repo root, resize choice, and product error copy configured by each game.
    Then complete only the residual script items proven by the 2026-07-15 audit:
    add a MIME-aware file-to-data-URL helper used by Mushroom's three HTML
    generators and Meat's production review; replace sparse sprite-sheet row
@@ -1414,20 +1415,14 @@ alpha-fit sampling remain narrowly local where replacing them changed
 compatibility hashes; the neutral alpha-fit API is tested and available for
 new consumers but is not substituted into that legacy producer yet.
 
-Post-completion finding 2026-07-15: the hidden-RGB strip fallback is not
-product policy. `composeFrameGrid()` currently hardcodes source-over even
-though `compositeRaster()` already supports byte-preserving `copy`. Add a
-`mode` option to the frame-grid API and declarations, validate supported modes,
-forward it during frame placement, and use `mode: 'copy'` for sprite-strip
-assembly. Tests must include fully transparent pixels with non-zero RGB,
-partially transparent pixels, multiple rows/columns, invalid modes, and the
-current Mushroom strip PNG hash. After those pass, delete only the local
-hidden-RGB detection and row-copy branch. Keep `findFrameRaws()` local because
-its `.source.png`/`.frame_N.source.png` convention, filesystem root, sorting
-contract, missing-directory behavior, and user-facing errors are currently
-demonstrated by one product only. Revisit a generic indexed-file discovery API
-only after a second consumer needs the same configurable prefix/suffix/index
-behavior.
+Post-completion finding 2026-07-15: the hidden-RGB strip fallback and its file
+mechanics are not product policy. Core now owns byte-preserving frame-grid copy,
+configurable indexed-file matching and ordering, PNG frame loading, optional
+resize, and composition. Mushroom supplies its `.source.png`/
+`.frame_N.source.png` convention, repository root, resize selection, expected
+frame count, fallback behavior, and remediation copy. Tests cover transparent
+hidden RGB, partial alpha, numeric ordering, regex-special filename fragments,
+missing directories, resize behavior, dimension errors, and invalid modes.
 
 #### Post-Completion Residual Script Audit - 2026-07-15
 
@@ -1440,9 +1435,9 @@ everything else.
 | Residual code | Recommendation | Boundary and proof required |
 | --- | --- | --- |
 | `artifactImageDataUrl()`, `seasonImageDataUrl()`, Mushroom social-preview `imageDataUrl()`, and Meat production-review `dataUrl()` | Add a Node-only `fileDataUrl(filePath, { mime })` or `imageFileDataUrl()` export in core, with MIME inference for supported image extensions | This is already duplicated across both products. Product wrappers may retain catalog labels and missing-file messages; encoded in-memory diagnostic rasters continue to use `encodeDeterministicPng()` directly. Test PNG/JPEG/WebP MIME, empty files, missing files, and deterministic output. |
-| Hidden-RGB strip assembly in `produce-home-field-assets.js` | Complete the planned `composeFrameGrid(..., { mode: 'copy' })` change and remove the scan/manual row-copy branch after exact golden tests | This is a missing option on an existing neutral API. Keep `.source.png` and `.frame_N.source.png` discovery local. |
+| Indexed animated-frame discovery and hidden-RGB strip assembly in `produce-home-field-assets.js` | Use core `findIndexedFiles()` and `composePngFrameGrid()` with `mode: 'copy'`; keep only the product pattern and messages local | Completed. Core owns matching, ordering, loading, resizing, and composition; Mushroom owns source naming, paths, count policy, fallback, and remediation. |
 | Sparse character placeholder placement and the chibi reference proxy | Prefer existing `createRaster()`, `cropRaster()`/`extractFrame()`, resize, and `compositeRaster({ mode: 'copy' })`/`opaque` primitives over local buffer allocation and row copies | Add no sprite-specific core API yet. Preserve legacy walk-frame replication, direction/row mapping, alpha cutoff, magenta reference color, and forced-alpha behavior in Mushroom. Introduce a neutral alpha-threshold transform only after another real adopter needs the same semantics. |
-| `generated-image-discovery.js`, `newestImagegenRawFor()`, `findFrameRaws()`, and archive raw-file listing | Propose a provisional `listFileEvidence()`/`discoverFiles()` primitive that walks to a bounded depth and returns path, mtime, bytes, and optional SHA-256; callers inject extension/name predicates and sorting | The traversal/evidence mechanics have several Mushroom call sites, but no second game consumer yet. Move only after fixtures prove unreadable-directory, symlink, depth, cutoff-boundary, ordering, and hashing behavior and Meat adopts it for candidate discovery. Temp roots, Codex paths, ids, prefix/suffix/index parsing, freshness decisions, and user-facing errors stay local. |
+| `generated-image-discovery.js`, `newestImagegenRawFor()`, and archive raw-file listing | Consider a separate bounded recursive evidence-discovery API only with a second adopter | Indexed sibling-file discovery is now solved by `findIndexedFiles()`. Recursive walking, mtimes, cutoffs, hashing, symlinks, and newest-file selection remain distinct contracts; temp roots, Codex paths, freshness decisions, and user-facing errors stay local. |
 | Artifact safe-canvas fit and frame/silhouette analysis | Reuse the existing core alpha-fit, frame-grid, `frameDifference()`, `alphaBounds()`, and connected-component APIs; add no duplicate helper merely to shorten local code | Keep the legacy alpha-fit sampler until its approved bitmap hash can be preserved. `meaningfullyUniqueFrameCount()` and `frameStats()` may become neutral `groupDistinctFrames()`/`silhouetteMetrics()` only when Meat or another animation consumer needs the returned metrics. Every threshold and pass/fail decision remains product policy. |
 | Artifact mask-edge clipping and raw-source subject aspect checks | Keep local | Grid-mask topology can later use a neutral boolean-grid boundary enumerator if a second domain needs it, but current occupancy rules, magenta-key predicate, drift allowance, exception ids, and remediation text are Mushroom artifact policy. |
 | `bitmap-image-toolkit.js`, `image-domain-metadata.js`, and `image-domain-provenance.js` | Keep as thin product adapters; optionally rename only if their responsibility becomes unclear | They inject `repoRoot` and provide stable local imports over already-shared core APIs. Removing them would spread root configuration through many commands without moving behavior. Add a comment/test rather than another abstraction. |
@@ -1460,10 +1455,10 @@ Optional hardening order, behind Hosted Telegram/web launch work:
 3. **8BG-H3 - Existing raster adoption.** Replace sparse sheet/proxy copy loops
    with current core raster operations where output remains exact. Keep a local
    compatibility path for thresholded proxy pixels if required.
-4. **8BG-H4 - Evidence-aware discovery, provisionally.** Freeze the four
-   discovery/listing contracts, design an injected generic primitive, and move
-   it only with a real Meat candidate-discovery adopter. Otherwise leave the
-   Mushroom helper local.
+4. **8BG-H4 - Bounded frame-file extraction.** Move non-recursive configurable
+   indexed-file matching plus PNG frame loading/composition to a Node-only core
+   subpath. Keep recursive evidence discovery provisional until another game
+   demonstrates the same traversal, cutoff, and hashing contract.
 5. **8BG-H5 - Validator cleanup without policy leakage.** Delete trivial local
    aliases in favor of direct core calls. Promote distinct-frame or silhouette
    metrics only with second-consumer fixtures; keep mask, magenta, catalog,
@@ -1486,10 +1481,14 @@ Mushroom artifact, season, and social-preview generators and Meat's production
 asset review while preserving each product's missing-file behavior. The final
 duplicate social-preview HTML escaping helper was removed in favor of core.
 
-H4 is closed without a move: generated-file traversal, newest raw-source
-selection, indexed-frame discovery, and archive listing still have different
-roots, recursion, naming, cutoff, ordering, and error contracts, and Meat has
-no real candidate-discovery adopter. H5's proposed distinct-frame,
+H4 was corrected after implementation review: indexed sibling-frame matching,
+numeric ordering, PNG loading/resizing, and composition moved to the public
+Node-only `tooling/frame-files` subpath, and Mushroom deleted `findFrameRaws()`
+and `composeStrip()` on core `aec6de4`. The product still injects its naming
+convention, root, frame-count policy, fallback, resize selection, and error copy. Recursive
+generated-file traversal, newest raw-source selection, and archive listing
+remain local because their depth, cutoff, hashing, symlink, and selection
+contracts differ. H5's proposed distinct-frame,
 silhouette-metric, boolean-grid-boundary, and alpha-threshold operations remain
 local/provisional for the same reason; product validators already call the
 lower-level core metrics directly. Do not reopen either item until a second

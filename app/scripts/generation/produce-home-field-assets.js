@@ -23,6 +23,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeEvidenceManifest } from '@microwavedev/backpack-game-core/tooling/evidence';
+import {
+  composePngFrameGrid,
+  findIndexedFiles
+} from '@microwavedev/backpack-game-core/tooling/frame-files';
 import { averageRegionRgb, rgbDistance } from '@microwavedev/backpack-game-core/tooling/image-analysis';
 import {
   encodeDeterministicPng,
@@ -33,7 +37,6 @@ import {
 import {
   blendRasterOppositeEdges,
   blendRasterTowardAverage,
-  composeFrameGrid,
   compositeRaster,
   createRaster,
   cropRaster,
@@ -233,39 +236,6 @@ function runChromaKey(rawPath, outPath, keyColor) {
   }
 }
 
-function findFrameRaws(sourcePath) {
-  const dir = path.dirname(sourcePath);
-  const baseName = path.basename(sourcePath, '.source.png');
-  const absDir = path.join(repoRoot, dir);
-  if (!fs.existsSync(absDir)) return [];
-  const re = new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.frame_(\\d+)\\.source\\.png$`);
-  const matches = fs
-    .readdirSync(absDir)
-    .map((f) => {
-      const m = f.match(re);
-      return m ? { file: path.join(dir, f), index: Number(m[1]) } : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.index - b.index);
-  return matches;
-}
-
-function composeStrip(frameFiles, frameWidth, frameHeight, opts = {}) {
-  const frames = [];
-  for (let f = 0; f < frameFiles.length; f += 1) {
-    let frame = readPngAsRgba(path.join(repoRoot, frameFiles[f].file));
-    if (frame.width !== frameWidth || frame.height !== frameHeight) {
-      if (opts.resize) {
-        frame = resizeRgba(frame, frameWidth, frameHeight, opts.resize);
-      } else {
-        throw new Error(`frame ${frameFiles[f].file} is ${frame.width}x${frame.height}, expected ${frameWidth}x${frameHeight} (pass --resize to scale)`);
-      }
-    }
-    frames.push(frame);
-  }
-  return composeFrameGrid(frames, { rows: 1, columns: frames.length, mode: 'copy' });
-}
-
 function outputAbsFor(entry, opts) {
   return opts.candidate
     ? path.join(opts.candidateRoot, entry.outputPath)
@@ -343,7 +313,13 @@ function processAnimatedEntry(entry, opts) {
   if (!a) return processStaticEntry(entry, opts);
 
   const rawAbs = path.join(repoRoot, entry.sourcePath);
-  const frameFiles = findFrameRaws(entry.sourcePath);
+  const sourceDir = path.dirname(entry.sourcePath);
+  const sourceBaseName = path.basename(entry.sourcePath, '.source.png');
+  const frameFiles = findIndexedFiles(sourceDir, {
+    root: repoRoot,
+    prefix: `${sourceBaseName}.frame_`,
+    suffix: '.source.png'
+  });
 
   if (frameFiles.length === 0) {
     if (fs.existsSync(rawAbs)) {
@@ -367,9 +343,18 @@ function processAnimatedEntry(entry, opts) {
 
   let strip;
   try {
-    strip = composeStrip(frameFiles, a.frameWidth, a.frameHeight, { resize: opts.resize });
+    strip = composePngFrameGrid(frameFiles.map(({ file }) => file), {
+      root: repoRoot,
+      frameWidth: a.frameWidth,
+      frameHeight: a.frameHeight,
+      resize: opts.resize ? (opts.resize === 'nearest' ? 'nearest' : 'hybrid') : undefined,
+      mode: 'copy'
+    });
   } catch (err) {
-    return { id: entry.id, ok: false, reason: err.message };
+    const resizeHint = !opts.resize && /, expected \d+x\d+$/.test(err.message)
+      ? ' (pass --resize to scale)'
+      : '';
+    return { id: entry.id, ok: false, reason: `${err.message}${resizeHint}` };
   }
 
   if (strip.width !== entry.width || strip.height !== entry.height) {
