@@ -1,4 +1,4 @@
-import { createTelegramBotGatewayPort } from '@microwavedev/backpack-game-core/server/ports/mushroom/platform';
+import { createTelegramBotRuntime } from '@microwavedev/backpack-game-core/server/telegram';
 import { createTelegramAuthCode, confirmTelegramAuthCode } from './auth.js';
 import {
   completeTelegramSuccessfulPayment,
@@ -6,7 +6,7 @@ import {
   validateTelegramPreCheckout
 } from './services/wallet-service.js';
 
-const botGatewayPort = createTelegramBotGatewayPort({
+const botGatewayPort = createTelegramBotRuntime({
   createTelegramAuthCode,
   confirmTelegramAuthCode,
   completeTelegramSuccessfulPayment,

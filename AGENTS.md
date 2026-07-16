@@ -9,6 +9,15 @@ This repository contains **two unrelated product surfaces**. Identify which one 
 | **Lore PDF pipeline** — Telegram archiver, OCR, lore generation, dossier rendering | `src/commands/` (entry points), `src/lib/` (implementation), `src/config/`, `data/<channel>/` | `npm test` (unit), `npm run analyze:pdf-structure` (PDF structure check), `npm run regenerate -- --force` (full rerun), `npm run regenerate -- --force --skip-download` (rebuild from local sources) | "Source Review Workflow", "Hashtag Routing Rules", "Tagging Workflow", "PDF Review Workflow", "Renderer Design Rules" sections below |
 | **Mushroom Battles** — web game with Telegram Mini App integration (Vue frontend + Express backend + Playwright specs) | `web/` (Vue), `app/server/` (Express), `app/shared/` (shared code), `tests/game/` (specs), `web/public/artifacts/`, `web/public/season-ranks/`, `web/public/achievements/` | `npm test` (all unit), `npm run game:test` (game unit), `npm run game:test:e2e` (Playwright e2e), `npm run game:test:screens` / `:debug` (screenshots) | "UI Verification Rules", "Layout Assertion Rules", "E2E / Integration Test Design Rules", "Inventory Review Rules", `.agent/workflows/ui-design.md` |
 
+Shared Telegram protocol helpers come from
+`@microwavedev/backpack-game-core/modules/telegram`; Node-only Bot API,
+init-data, update-router, and bot-runtime behavior comes from
+`@microwavedev/backpack-game-core/server/telegram`. Mushroom retains bot
+credentials, webhook and command policy, copy, auth/payment callbacks, route
+mounting, lore captions/files, and MTProto channel/OCR/archive workflows. Do
+not deep-import the nested core source or move lore command handlers merely
+because they use Telegram.
+
 ## Script Organization
 
 Treat npm aliases as the public script interface. Before adding, moving, or

@@ -664,17 +664,16 @@ work. A new shared Telegram lane is justified by demonstrated duplication:
 Mushroom already runs a bot gateway and Bot API delivery utilities, while Meat
 now also requires a production bot. Execute the remaining work in this order:
 
-1. **Extract and adopt the shared Telegram platform module.** Promote the
-   neutral parts of the existing quarantined `createTelegramBotGatewayPort()`
-   into a stable core Telegram facade, and move reusable Bot API transport,
-   target normalization, retry/error handling, message/document operations,
-   Mini App init-data verification, webhook update normalization, links,
-   keyboards, and game-score payloads behind injected adapters. Mushroom must
-   consume the stable module for its game bot and generic lore-bot delivery;
-   Meat must use it for a real `/start`/open-game bot and webhook path. Keep
-   tokens, webhook URLs/secrets, product commands/copy, user persistence,
-   payment completion policy, Mushroom channel filtering/OCR/PDF behavior, and
-   final route mounting local. Follow the detailed Telegram roadmap below.
+1. **Completed 2026-07-16: extract and adopt the shared Telegram platform
+   module.** Core SHA `c6f7660` now exposes typed `modules/telegram` and
+   `server/telegram` facades. Mushroom consumes the stable runtime for its game
+   bot and the stable transport for generic lore-bot delivery; Meat has a real
+   `/start`, mention, Mini App keyboard, secret-checked webhook, and startup
+   webhook reconciliation path over the same core release. The former
+   Mushroom gateway remains a one-line compatibility export. Product tokens,
+   copy, commands, payment callbacks, filesystem/lore behavior, and route
+   mounting remain local. The detailed implementation record is in the
+   Telegram roadmap below.
 2. **Prove the hosted Meat deployment with real infrastructure.** Deploy the
    current app and Docker PostgreSQL configuration to the selected host, open
    it through the real Telegram bot/public URL, verify signed init data, and
@@ -760,6 +759,10 @@ Mushroom lore generation or Meat product behavior into core.
 
 #### T1 - Freeze Current Contracts And Split Ownership
 
+Status: **Completed on core SHA `c6f7660`.** Existing game-bot, lore Bot API,
+MTProto, and Meat auth surfaces were classified; MTProto/lore behavior remains
+product-local.
+
 - Inventory Mushroom game-bot behavior in `app/server/bot-gateway.js`, generic
   Bot API delivery in `src/lib/bot.js`, MTProto/channel access in
   `src/lib/telegram.js`, and Meat's existing Mini App auth path.
@@ -772,6 +775,10 @@ Mushroom lore generation or Meat product behavior into core.
   merely because Telegram appears in its name.
 
 #### T2 - Establish Stable Core Telegram Facades
+
+Status: **Completed on core SHA `c6f7660`.** Typed browser-safe and Node-only
+package routes now own the neutral protocol, transport, verification, and
+runtime surfaces.
 
 - Add stable package routes such as `modules/telegram` for protocol DTOs and
   `server/telegram` for Node transport/runtime composition; avoid new source
@@ -792,6 +799,9 @@ Mushroom lore generation or Meat product behavior into core.
 
 #### T3 - Make Webhook And Command Handling Configurable
 
+Status: **Completed on core SHA `c6f7660`.** Update routing and runtime behavior
+use injected handlers and copy while final HTTP mounting and policy stay local.
+
 - Provide an update normalizer/router for messages, callback queries,
   pre-checkout queries, and successful payments. Route to injected handlers and
   return a neutral handled/ignored/error result.
@@ -804,6 +814,10 @@ Mushroom lore generation or Meat product behavior into core.
   in each product's server module list.
 
 #### T4 - Migrate Mushroom Without Behavior Drift
+
+Status: **Completed on core SHA `c6f7660`.** The game bot uses the stable
+runtime and generic lore delivery uses the stable client; Mushroom's full
+981-test suite passes.
 
 - Rebuild `app/server/bot-gateway.js` as a thin product configuration over the
   stable core Telegram module. Preserve auth-code, game callback/score,
@@ -823,6 +837,10 @@ Mushroom lore generation or Meat product behavior into core.
 
 #### T5 - Add The Meat Bot As A Real Consumer
 
+Status: **Implemented on core SHA `c6f7660`; live hosted smoke remains in the
+production-deploy lane.** Meat now owns its minimal bot configuration, command
+copy, webhook secret, route, and startup reconciliation over shared adapters.
+
 - Add Meat-local bot config, webhook route/module entry, commands, locale copy,
   game URL, and identity/session adapters over the same stable core facade.
 - Ship the minimum bot flow first: `/start`, open-game inline keyboard/deep
@@ -834,6 +852,10 @@ Mushroom lore generation or Meat product behavior into core.
   Telegram smoke using the real Meat bot.
 
 #### T6 - Stabilize, Document, And Release
+
+Status: **Implementation and local verification completed on core SHA
+`c6f7660`.** Core tests/package checks and both consumer test suites pass; the
+remaining live bot proof is explicitly part of the hosted deployment task.
 
 - Remove duplicate implementations only after golden behavior tests pass in
   both consumers. Preserve temporary compatibility exports with explicit
