@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `c42595a`
-- core short SHA: `c42595a`
-- core commit: `feat: add repository-targeted tooling CLI`
-- runtime/API baseline: `c42595a` (`feat: add repository-targeted tooling CLI`)
-- game pointer commit: `38bd152` (`chore: route shared scripts through core CLI`)
+- core SHA: `c6f7660`
+- core short SHA: `c6f7660`
+- core commit: `feat: add shared Telegram platform`
+- runtime/API baseline: `c6f7660` (`feat: add shared Telegram platform`)
+- game pointer commit: `636e320` (`refactor: consume shared Telegram core`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-16 | `636e320` | `c6f7660` | Stable shared Telegram protocol and server facades | Core now exposes browser-safe link/keyboard/update helpers plus Node-only init-data verification, Bot API transport, update routing, and reusable bot runtime. Mushroom consumes the stable runtime and lore-bot transport while retaining commands, copy, payments, filesystem, and MTProto workflows locally. Meat pins the same SHA and adds its product-local bot and webhook. Core and both consumer suites pass. |
 | 2026-07-15 | `38bd152` | `c42595a` | Repository-targeted tooling CLI and routing guide | Core now exposes the `backpack-game-core` command router, requires `--repo-root` for consumer-targeted commands, and documents which scripts are universal CLI commands, configured library-backed wrappers, or product-only operations. Mushroom and Meat replace their duplicate script-documentation wrappers with the same local npm alias while retaining product catalogs, thresholds, queues, and mutation policy locally. |
 | 2026-07-13 | `3a5b860` | `1529358` | Shared run runtime and run-summary page | Mushroom executes `run-runtime/v1` across real run routes and keeps a thin locale/state adapter for the physically moved `RunSummaryScreen`. Meat pins the same core SHA and executes the runtime over its snapshot store while visibly rendering the shared page after run completion. Full cross-consumer verification passed. |
 | 2026-07-13 | `b379a16` | `04abe9d` | Complete server feature route groups | Mushroom now mounts social, run, support-admin, and gacha-admin routes through core descriptors in addition to auth, bot, wiki, profile, wallet, and assets. The gacha item API now distinguishes single-item `POST` from bulk replacement `PUT`. |
