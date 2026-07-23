@@ -53,6 +53,10 @@ instructions or handoffs.
 - Prefer npm aliases in instructions, queue output, tests, and runbooks instead
   of direct implementation paths. The documented deployment shell entry points
   are the intentional exception.
+- For routine hosted updates, run `bash/update-production-server.sh`. That
+  Mushroom wrapper owns Git and nested-submodule bootstrap, then delegates
+  Compose restart, cache cleanup, diagnostics, and health waiting to the pinned
+  core shell runner. Do not invoke the nested core runner directly.
 - Every new public script must have a `package.json` alias, belong to a command
   family in the manifest, and use one of the five entry-point directories.
 - Run `npm run scripts:docs:check` after changing scripts, aliases, the manifest,

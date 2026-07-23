@@ -227,13 +227,16 @@ app/scripts/operations/restart-production-server.sh --help
 app/scripts/operations/setup-nginx-production.sh --help
 ```
 
-They share argument, path, Compose, and environment parsing through
-`app/scripts/lib/production-server.sh`. Read
+Setup, restart, and nginx helpers share local parsing through
+`app/scripts/lib/production-server.sh`. The routine update wrapper bootstraps
+the nested game core and delegates generic Compose restart, cache cleanup,
+diagnostics, and health waiting to the pinned core shell runner. Read
 [`telegram-production-readiness.md`](../../docs/telegram-production-readiness.md)
 before changing a production host. The update helper synchronizes submodule
 URLs and runs `git submodule update --init --recursive --progress` after pulling
 the app, so a fresh server clones the pinned game-core commit and an existing
-server updates it. `--no-pull` intentionally skips both operations.
+server updates it. `--no-pull` skips the product Git pull but still initializes
+or repairs the pinned submodule before delegation.
 
 ## Do Not Invoke Directly
 

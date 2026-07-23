@@ -7098,4 +7098,23 @@ frontend adoption.
      detail normalization, frame-difference clustering, and mask-boundary alpha
      metrics. Existing core matte metrics, RGB shifting, and alpha fitting now
      replace their local algorithms. Product-specific coordinators and the
-     explicitly deferred chroma/discovery/command items above remain local.
+   explicitly deferred chroma/discovery/command items above remain local.
+94. Phase 8BH shared hosted-update runner. **Implemented 2026-07-23 in core
+   commit `5ffe833` and adopted by both products:**
+   - Move the existing production Compose rebuild/restart, cache cleanup,
+     container diagnostics, retry, and HTTP health-wait engine from Mushroom
+     into a product-neutral core shell runner.
+   - Keep one thin `bash/update-production-server.sh` in each consumer. It owns
+     the product branch and clean-tree check, pulls the product checkout, then
+     always runs recursive submodule sync/init/update before invoking core.
+     This bootstrap must remain consumer-local because core may not exist yet.
+   - Pass env file, Compose file, app service, port key/default, and health path
+     explicitly. Core must not guess Mushroom or Meat names, credentials,
+     topology, or Git policy, and must never prune Docker volumes.
+   - Meat now has the missing hosted `app` Compose service, production
+     Dockerfile/context exclusions, an unauthenticated `/api/health` contract,
+     and server env defaults. Its production image and isolated
+     Postgres-plus-app health smoke pass.
+   - Agents and operators invoke only the consumer wrapper. Direct nested-core
+     execution is unsupported because it bypasses bootstrap and product
+     configuration.
