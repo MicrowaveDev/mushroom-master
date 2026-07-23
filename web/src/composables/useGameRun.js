@@ -15,6 +15,7 @@ import {
 import { projectLoadoutItems } from './loadout-projection.js';
 
 export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadReplay, feedback = {}) {
+  let loadoutSaveQueue = Promise.resolve();
   const haptics = {
     impact: typeof feedback.impact === 'function' ? feedback.impact : () => {},
     notify: typeof feedback.notify === 'function' ? feedback.notify : () => {},
@@ -74,6 +75,25 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       }, slot.id));
     }
     return payload;
+  }
+
+  function enqueueRunLoadoutSave({ strict = false } = {}) {
+    if (!state.gameRun || !state.bootstrap?.activeMushroomId) return Promise.resolve(null);
+    const snapshot = {
+      gameRunId: state.gameRun.id,
+      roundNumber: state.gameRun.currentRound,
+      mushroomId: state.bootstrap.activeMushroomId,
+      items: buildLoadoutPayloadItems()
+    };
+    const request = loadoutSaveQueue.then(() => {
+      const api = gameApi();
+      return api.request(api.routePath('artifactLoadout'), {
+        method: 'PUT',
+        body: snapshot
+      });
+    });
+    loadoutSaveQueue = request.catch(() => null);
+    return strict ? request : loadoutSaveQueue;
   }
 
   function projectRunLoadout(run) {
@@ -141,11 +161,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     try {
       state.error = '';
       if (state.bootstrap?.activeMushroomId) {
-        const api = gameApi();
-        await api.request(api.routePath('artifactLoadout'), {
-          method: 'PUT',
-          body: { mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() }
-        });
+        await enqueueRunLoadoutSave({ strict: true });
       }
       const api = gameApi();
       const data = await api.request(api.routePath('gameRunReady', { gameRunId: state.gameRun.id }), {
@@ -437,14 +453,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   }
 
   async function persistRunLoadout() {
-    if (!state.gameRun || !state.bootstrap?.activeMushroomId) return;
-    try {
-      const api = gameApi();
-      await api.request(api.routePath('artifactLoadout'), {
-        method: 'PUT',
-        body: { mushroomId: state.bootstrap.activeMushroomId, items: buildLoadoutPayloadItems() }
-      });
-    } catch { /* best-effort persist */ }
+    await enqueueRunLoadoutSave();
   }
 
   return {

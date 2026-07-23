@@ -337,6 +337,19 @@ test('[Req 12-D, 5-A] absolute bag/item coords survive PUT /artifact-loadout + c
   assert.notEqual(round2Placed.rows[0].id, barkRowId, 'copy-forward mints fresh item ids per round');
   assert.equal(round2Placed.rows[0].x, 3);
   assert.equal(round2Placed.rows[0].y, 0);
+
+  await assert.rejects(
+    () => applyRunLoadoutPlacements(session.player.id, run.id, [
+      { id: round2Placed.rows[0].id, artifactId: 'bark_plate', x: -1, y: -1, width: 1, height: 1 }
+    ], { expectedRound: 1 }),
+    /Stale loadout save for round 1; active round is 2/
+  );
+  const round2AfterStaleSave = await query(
+    `SELECT x, y FROM game_run_loadout_items WHERE id = $1`,
+    [round2Placed.rows[0].id]
+  );
+  assert.equal(round2AfterStaleSave.rows[0].x, 3, 'a stale prior-round save must not move the item');
+  assert.equal(round2AfterStaleSave.rows[0].y, 0, 'a stale prior-round save must not move the item');
 });
 
 // --- Sell non-empty bag ---

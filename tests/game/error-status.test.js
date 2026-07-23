@@ -64,4 +64,5 @@ test('existing keywords still resolve', () => {
   assert.equal(mapErrorToStatus('Player is not part of this active game run'), 403);
   assert.equal(mapErrorToStatus('Not enough coins'), 400);
   assert.equal(mapErrorToStatus('Unknown artifact: totally_fake'), 400);
+  assert.equal(mapErrorToStatus('Stale loadout save for round 1; active round is 2'), 409);
 });

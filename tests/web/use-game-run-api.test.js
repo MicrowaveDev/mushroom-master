@@ -134,10 +134,99 @@ test('useGameRun routes run mutations through the shared route client', async ()
   ]);
   assert.ok(calls.every((call) => call.init.headers['X-Session-Key'] === 'session_run'));
   assert.deepEqual(JSON.parse(calls[0].init.body), { mode: 'solo' });
-  assert.deepEqual(JSON.parse(calls[1].init.body), { mushroomId: 'thalla', items: [] });
+  assert.deepEqual(JSON.parse(calls[1].init.body), {
+    gameRunId: 'run_1',
+    roundNumber: 1,
+    mushroomId: 'thalla',
+    items: []
+  });
   assert.equal(calls[3].init.body, undefined);
   assert.deepEqual(JSON.parse(calls[5].init.body), { artifactId: 'blade' });
   assert.deepEqual(JSON.parse(calls[6].init.body), { id: 'row_blade', artifactId: 'blade' });
+});
+
+test('useGameRun serializes loadout saves and flushes the final layout before Ready', async () => {
+  const previousFetch = globalThis.fetch;
+  const pendingLoadoutResponses = [];
+  const calls = [];
+  const artifacts = [
+    { id: 'starter_bag', family: 'bag', width: 2, height: 2, price: 1 },
+    { id: 'blade', family: 'weapon', width: 1, height: 1, price: 1 }
+  ];
+  const state = {
+    sessionKey: 'session_run',
+    lang: 'en',
+    error: '',
+    actionInFlight: false,
+    bootstrap: { activeMushroomId: 'thalla', artifacts },
+    gameRun: { id: 'run_race', currentRound: 1, player: { coins: 5 } },
+    gameRunRounds: [],
+    gameRunResult: null,
+    builderItems: [{ id: 'row_blade', artifactId: 'blade', x: 0, y: 0, width: 1, height: 1 }],
+    containerItems: [],
+    activeBags: [{ id: 'row_bag', artifactId: 'starter_bag', anchorX: 0, anchorY: 0 }],
+    rotatedBags: [],
+    freshPurchases: [],
+    fusionRevealQueue: []
+  };
+
+  globalThis.fetch = (url, init) => {
+    calls.push({ url, init });
+    if (url === '/api/artifact-loadout') {
+      return new Promise((resolve) => pendingLoadoutResponses.push(() => (
+        resolve(jsonResponse({ success: true, data: { ok: true } }))
+      )));
+    }
+    return Promise.resolve(jsonResponse({
+      success: true,
+      data: { id: 'run_race', waiting: true }
+    }));
+  };
+
+  const tick = () => new Promise((resolve) => setImmediate(resolve));
+  try {
+    const gameRun = useGameRun(
+      state,
+      () => {},
+      (artifactId) => artifacts.find((artifact) => artifact.id === artifactId) || null,
+      async () => {},
+      async () => {},
+      { impact() {}, selectionChanged() {}, notify() {} }
+    );
+
+    const firstSave = gameRun.persistRunLoadout();
+    await tick();
+    state.builderItems = [{ ...state.builderItems[0], x: 1 }];
+    const secondSave = gameRun.persistRunLoadout();
+    const ready = gameRun.signalReady();
+    await tick();
+
+    assert.equal(calls.length, 1, 'only the first loadout request may be in flight');
+    pendingLoadoutResponses.shift()();
+    await tick();
+    assert.equal(calls.length, 2, 'the second save starts after the first completes');
+    pendingLoadoutResponses.shift()();
+    await tick();
+    assert.equal(calls.length, 3, 'Ready queues one authoritative final loadout snapshot');
+    pendingLoadoutResponses.shift()();
+    await Promise.all([firstSave, secondSave, ready]);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+
+  assert.deepEqual(calls.map((call) => `${call.init.method} ${call.url}`), [
+    'PUT /api/artifact-loadout',
+    'PUT /api/artifact-loadout',
+    'PUT /api/artifact-loadout',
+    'POST /api/game-run/run_race/ready'
+  ]);
+  const loadoutBodies = calls.slice(0, 3).map((call) => JSON.parse(call.init.body));
+  assert.deepEqual(loadoutBodies.map((body) => body.roundNumber), [1, 1, 1]);
+  assert.deepEqual(loadoutBodies.map((body) => body.gameRunId), ['run_race', 'run_race', 'run_race']);
+  assert.deepEqual(
+    loadoutBodies.map((body) => body.items.find((item) => item.id === 'row_blade').x),
+    [0, 1, 1]
+  );
 });
 
 test('useGameRun applies shared game-run response patches', async () => {

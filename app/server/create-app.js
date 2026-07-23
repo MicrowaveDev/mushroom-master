@@ -703,7 +703,8 @@ const ERROR_STATUS_MAP = [
   ['cannot overlap', 400],
   ['coordinates', 400],
   ['is full', 400],
-  ['exceeds', 400]
+  ['exceeds', 400],
+  ['stale loadout', 409]
 ];
 
 export function mapErrorToStatus(message) {
@@ -1452,12 +1453,23 @@ export async function createApp() {
       // Loadout placements are always run-scoped now. The legacy
       // single-battle branch (saveArtifactLoadout against
       // player_artifact_loadouts) was deleted in 2026-04-13.
-      const activeRun = await getActiveGameRun(req.user.id);
+      const activeRun = await getActiveGameRun(req.user.id, req.body.mushroomId || null);
       if (!activeRun) {
         throw new Error('No active game run');
       }
-      await applyRunLoadoutPlacements(req.user.id, activeRun.id, req.body.items || []);
-      res.json({ success: true, data: await getActiveGameRun(req.user.id) });
+      if (req.body.gameRunId && req.body.gameRunId !== activeRun.id) {
+        throw new Error(`Stale loadout save for game run ${req.body.gameRunId}`);
+      }
+      await applyRunLoadoutPlacements(
+        req.user.id,
+        activeRun.id,
+        req.body.items || [],
+        { expectedRound: req.body.roundNumber }
+      );
+      res.json({
+        success: true,
+        data: await getActiveGameRun(req.user.id, req.body.mushroomId || null)
+      });
     })
   );
 
