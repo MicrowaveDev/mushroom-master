@@ -47,6 +47,14 @@ test('[deployment] Docker image includes the file-based core dependency in build
   assert.match(dockerfile, /COPY --from=build \/app\/vendor \.\/vendor/);
 });
 
+test('[deployment] production updater normalizes the pinned core before checking cleanliness', () => {
+  const source = fs.readFileSync(path.join(repoRoot, 'bash/update-production-server.sh'), 'utf8');
+  const normalize = source.indexOf('git submodule update --init --recursive --progress');
+  const cleanlinessCheck = source.indexOf('git status --porcelain');
+  assert.ok(normalize >= 0);
+  assert.ok(normalize < cleanlinessCheck);
+});
+
 test('[scripts] entry points are grouped by responsibility', () => {
   const scriptsRoot = path.join(repoRoot, 'app/scripts');
   const rootEntries = fs.readdirSync(scriptsRoot, { withFileTypes: true });

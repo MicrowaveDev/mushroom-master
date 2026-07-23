@@ -42,6 +42,10 @@ done
 cd "$PROJECT_ROOT"
 command -v git >/dev/null 2>&1 || die "git is not installed or not in PATH"
 
+echo "Synchronizing and initializing pinned submodules..."
+git submodule sync --recursive
+git submodule update --init --recursive --progress
+
 if [[ "$PULL_CODE" -eq 1 ]]; then
   [[ -z "$(git status --porcelain)" ]] \
     || die "working tree is dirty; commit or stash changes before production update"
