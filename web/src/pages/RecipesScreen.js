@@ -1,9 +1,9 @@
-import { CatalogPageScreen } from '@microwavedev/backpack-game-core/vue/components';
+import { RecipesScreen as CoreRecipesScreen } from '@microwavedev/backpack-game-core/vue/pages';
 import { ArtifactCatalogBrowser } from '../components/ArtifactCatalogBrowser.js';
 
 export const RecipesScreen = {
   name: 'RecipesScreen',
-  components: { ArtifactCatalogBrowser, CatalogPageScreen },
+  components: { ArtifactCatalogBrowser, CoreRecipesScreen },
   props: ['state', 't', 'getArtifact'],
   computed: {
     labels() {
@@ -15,17 +15,14 @@ export const RecipesScreen = {
     }
   },
   template: `
-    <catalog-page-screen
-      :labels="labels"
-      root-class="recipes-screen"
-      header-class="recipes-cover panel"
-      test-id="recipes-screen"
-    >
-      <artifact-catalog-browser
-        :state="state"
-        :t="t"
-        :get-artifact="getArtifact"
-      />
-    </catalog-page-screen>
+    <core-recipes-screen :labels="labels">
+      <template #catalog>
+        <artifact-catalog-browser
+          :state="state"
+          :t="t"
+          :get-artifact="getArtifact"
+        />
+      </template>
+    </core-recipes-screen>
   `
 };

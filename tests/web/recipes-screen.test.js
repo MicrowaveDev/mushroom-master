@@ -14,8 +14,10 @@ function viewModel(extra = {}) {
 }
 
 test('recipes screen delegates generic catalog page shell to core', () => {
-  assert.equal(RecipesScreen.components.CatalogPageScreen.name, 'CatalogPageScreen');
-  assert.match(RecipesScreen.template, /catalog-page-screen/);
+  assert.equal(RecipesScreen.components.CoreRecipesScreen.name, 'RecipesScreen');
+  assert.equal(RecipesScreen.components.ArtifactCatalogBrowser.name, 'ArtifactCatalogBrowser');
+  assert.match(RecipesScreen.template, /core-recipes-screen/);
+  assert.match(RecipesScreen.template, /#catalog/);
   assert.match(RecipesScreen.template, /artifact-catalog-browser/);
 
   const vm = viewModel({
