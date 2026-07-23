@@ -22,11 +22,11 @@ package version.
 
 `mushroom-master` currently consumes:
 
-- core SHA: `5ffe833`
-- core short SHA: `5ffe833`
-- core commit: `feat: share production update runner`
+- core SHA: `4ddea8a`
+- core short SHA: `4ddea8a`
+- core commit: `fix: avoid redundant production build retry`
 - runtime/API baseline: `c6f7660` (`feat: add shared Telegram platform`)
-- game pointer commit: `f6e247c` (`refactor: delegate production updates to core`)
+- game pointer commit: `2c731f5` (`fix: include shared core in production image`)
 - package path: `vendor/backpack-game-core`
 - dependency path: `file:vendor/backpack-game-core`
 
@@ -34,6 +34,7 @@ package version.
 
 | Date | Game commit | Core SHA | Core change | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-07-23 | `2c731f5` | `4ddea8a` | Production image dependency and retry correction | Mushroom now copies the file-based core dependency into both Docker build and runtime stages, with regression coverage and a real production image/runtime import smoke test. The shared updater no longer repeats an identical failed build after aggressive cleanup. Meat pins the same corrected updater at `8d2ebb8`. |
 | 2026-07-23 | `f6e247c` | `5ffe833` | Shared production container update runner | Mushroom and Meat (`81a366c`) keep thin product bootstrap/config wrappers and pin the same core runner for Compose rebuild/restart, cache cleanup, diagnostics, and HTTP health waiting. Meat adds its missing hosted app image/service and health route; core tests/package checks, both wrapper help paths, Meat tests/build/Compose validation, and an isolated Postgres-plus-app container smoke pass. |
 | 2026-07-16 | `636e320` | `c6f7660` | Stable shared Telegram protocol and server facades | Core now exposes browser-safe link/keyboard/update helpers plus Node-only init-data verification, Bot API transport, update routing, and reusable bot runtime. Mushroom consumes the stable runtime and lore-bot transport while retaining commands, copy, payments, filesystem, and MTProto workflows locally. Meat pins the same SHA and adds its product-local bot and webhook. Core and both consumer suites pass. |
 | 2026-07-15 | `38bd152` | `c42595a` | Repository-targeted tooling CLI and routing guide | Core now exposes the `backpack-game-core` command router, requires `--repo-root` for consumer-targeted commands, and documents which scripts are universal CLI commands, configured library-backed wrappers, or product-only operations. Mushroom and Meat replace their duplicate script-documentation wrappers with the same local npm alias while retaining product catalogs, thresholds, queues, and mutation policy locally. |
