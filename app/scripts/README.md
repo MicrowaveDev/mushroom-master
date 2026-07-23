@@ -222,7 +222,7 @@ routine updates, restarts, and nginx installation have different risk boundaries
 
 ```bash
 app/scripts/operations/setup-docker-production.sh --help
-app/scripts/operations/update-production-server.sh --help
+bash/update-production-server.sh --help
 app/scripts/operations/restart-production-server.sh --help
 app/scripts/operations/setup-nginx-production.sh --help
 ```

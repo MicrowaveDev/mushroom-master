@@ -136,9 +136,9 @@ Initial submodule cloning and later pointer updates are both shown in the
 command output:
 
 ```bash
-app/scripts/operations/update-production-server.sh
-app/scripts/operations/update-production-server.sh --logs
-app/scripts/operations/update-production-server.sh --preflight-cleanup
+bash/update-production-server.sh
+bash/update-production-server.sh --logs
+bash/update-production-server.sh --preflight-cleanup
 ```
 
 Back up the production database before risky deploys:

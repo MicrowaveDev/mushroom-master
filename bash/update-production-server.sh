@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${PROJECT_ROOT}/app/scripts/lib/production-server.sh"
 ENV_FILE="${PROJECT_ROOT}/.env"
 COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.production.yml"
@@ -27,10 +27,10 @@ rebuilds the app container, waits for the local health route, and prints recent
 logs on failure. Docker volumes are never pruned.
 
 Examples:
-  app/scripts/operations/update-production-server.sh
-  app/scripts/operations/update-production-server.sh --logs
-  app/scripts/operations/update-production-server.sh --preflight-cleanup
-  app/scripts/operations/update-production-server.sh --no-pull --no-build
+  bash/update-production-server.sh
+  bash/update-production-server.sh --logs
+  bash/update-production-server.sh --preflight-cleanup
+  bash/update-production-server.sh --no-pull --no-build
 
 Options:
   --env-file PATH          Env file for Docker Compose. Default: .env
