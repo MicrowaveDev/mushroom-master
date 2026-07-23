@@ -762,6 +762,15 @@ export async function createApp() {
     refillPerSec: 1 / 30,
     keyFn: (req) => `ip:${clientIp(req)}`
   });
+  const publicAuthPollingRateLimit = rateLimit({
+    capacity: 12,
+    refillPerSec: 1,
+    keyFn: (req) => {
+      const privateCode = String(req.body?.privateCode || '').trim();
+      const codeHash = crypto.createHash('sha256').update(privateCode).digest('hex');
+      return `auth-code-poll:${clientIp(req)}:${codeHash}`;
+    }
+  });
 
   app.get('/api/health', (_req, res) => {
     res.json({ success: true, data: { ok: true } });
@@ -836,7 +845,10 @@ export async function createApp() {
       },
       middleware: {
         auth: requireAuth,
-        public: publicAuthRateLimit
+        providerLogin: publicAuthRateLimit,
+        providerCode: publicAuthRateLimit,
+        providerVerifyCode: publicAuthPollingRateLimit,
+        webLogin: publicAuthRateLimit
       }
     })
   ]);

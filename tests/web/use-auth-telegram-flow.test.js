@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readPreferredLanguage, useAuth, writePreferredLanguage } from '../../web/src/composables/useAuth.js';
+import {
+  normalizeTelegramAuthVerificationResponse,
+  readPreferredLanguage,
+  useAuth,
+  writePreferredLanguage
+} from '../../web/src/composables/useAuth.js';
 
 function makeState() {
   return {
@@ -97,6 +102,27 @@ test('[lang] preferred language storage validates supported locales', () => {
   assert.equal(readPreferredLanguage(storage), 'en');
   assert.equal(writePreferredLanguage('de', storage), 'ru');
   assert.equal(readPreferredLanguage(storage), 'ru');
+});
+
+test('[telegram-auth] rate-limited verification remains a retryable poll result', () => {
+  assert.deepEqual(
+    normalizeTelegramAuthVerificationResponse(
+      { status: 429 },
+      { success: false, error: 'Too many requests' }
+    ),
+    {
+      success: false,
+      error: 'Too many requests',
+      needsBotAuth: true
+    }
+  );
+  assert.deepEqual(
+    normalizeTelegramAuthVerificationResponse(
+      { status: 400 },
+      { success: false, error: 'Invalid code' }
+    ),
+    { success: false, error: 'Invalid code' }
+  );
 });
 
 test('[telegram-auth] starts bot-code login and can cancel it', async () => {

@@ -51,6 +51,30 @@ test('[Req 4-Z] app config exposes payment support links for wallet UI', async (
   });
 });
 
+test('[telegram-auth] verification polling has a separate sustainable rate-limit bucket', async () => {
+  await withEnv({ RATE_LIMIT_FORCE: 'true' }, async () => {
+    await freshDb();
+    clearRateLimitBuckets();
+    const app = await createApp();
+    const ip = '203.0.113.42';
+    const created = await request(app)
+      .post('/api/auth/telegram/code')
+      .set('x-forwarded-for', ip)
+      .send({});
+
+    assert.equal(created.status, 200);
+    const privateCode = created.body.data.privateCode;
+    for (let i = 0; i < 12; i++) {
+      const response = await request(app)
+        .post('/api/auth/telegram/verify-code')
+        .set('x-forwarded-for', ip)
+        .send({ privateCode });
+      assert.equal(response.status, 200);
+      assert.equal(response.body.needsBotAuth, true);
+    }
+  });
+});
+
 test('[Req 4-Z] paid asset routes use separate abuse-control buckets', async () => {
   await withEnv({ RATE_LIMIT_FORCE: 'true' }, async () => {
     await freshDb();

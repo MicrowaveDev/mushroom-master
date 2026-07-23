@@ -32,6 +32,15 @@ export function writePreferredLanguage(lang, storage = globalThis.localStorage) 
   return normalized;
 }
 
+export function normalizeTelegramAuthVerificationResponse(response, payload) {
+  if (response?.status !== 429) return payload;
+  return {
+    ...payload,
+    success: false,
+    needsBotAuth: true
+  };
+}
+
 export function extractTelegramInitData({ win = globalThis.window, telegram } = {}) {
   const directInitData = telegram?.getWebApp?.()?.initData || win?.Telegram?.WebApp?.initData;
   if (typeof directInitData === 'string' && directInitData.trim()) {
@@ -339,7 +348,7 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ privateCode })
     });
-    const json = await response.json();
+    const json = normalizeTelegramAuthVerificationResponse(response, await response.json());
     if (!json.success && !json.needsBotAuth) {
       throw new Error(json.error || 'Telegram bot login failed');
     }
