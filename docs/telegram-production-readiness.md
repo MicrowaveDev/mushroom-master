@@ -128,7 +128,12 @@ docker compose --env-file .env -f docker-compose.production.yml logs -f app
 curl -I http://127.0.0.1:3021
 ```
 
-Routine production updates should use the update helper. It pulls `origin/main`, aggressively prunes safe Docker/repo build cache by default, rebuilds the app container, and waits for `/api/health`:
+Routine production updates should use the update helper. It pulls `origin/main`,
+synchronizes submodule URLs, initializes/fetches recursive submodules at the
+commit pinned by Mushroom Master, aggressively prunes safe Docker/repo build
+cache by default, rebuilds the app container, and waits for `/api/health`.
+Initial submodule cloning and later pointer updates are both shown in the
+command output:
 
 ```bash
 app/scripts/operations/update-production-server.sh

@@ -366,7 +366,11 @@ if [[ "$PULL_CODE" -eq 1 ]]; then
   git checkout "$BRANCH"
   git pull --ff-only origin "$BRANCH"
   if [[ -f .gitmodules ]]; then
-    git submodule update --init --recursive
+    echo ""
+    echo "Synchronizing submodule URLs..."
+    git submodule sync --recursive
+    echo "Initializing and fetching pinned submodules..."
+    git submodule update --init --recursive --progress
   fi
 fi
 
