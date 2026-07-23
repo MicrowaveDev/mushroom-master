@@ -39,6 +39,14 @@ test('[scripts] artifact rendering helper remains available to the web UI', () =
   assert.equal(fs.existsSync(path.join(repoRoot, 'web/src/artifacts/render.js')), true);
 });
 
+test('[deployment] Docker image includes the file-based core dependency in build and runtime stages', () => {
+  const dockerfile = fs.readFileSync(path.join(repoRoot, 'Dockerfile'), 'utf8');
+  const dependencyCopy = 'COPY vendor/backpack-game-core ./vendor/backpack-game-core';
+  const install = 'RUN npm ci';
+  assert.ok(dockerfile.indexOf(dependencyCopy) < dockerfile.indexOf(install));
+  assert.match(dockerfile, /COPY --from=build \/app\/vendor \.\/vendor/);
+});
+
 test('[scripts] entry points are grouped by responsibility', () => {
   const scriptsRoot = path.join(repoRoot, 'app/scripts');
   const rootEntries = fs.readdirSync(scriptsRoot, { withFileTypes: true });

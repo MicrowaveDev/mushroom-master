@@ -10,6 +10,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
+COPY vendor/backpack-game-core ./vendor/backpack-game-core
 RUN npm ci
 
 COPY app ./app
@@ -48,6 +49,7 @@ RUN apt-get update \
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/vendor ./vendor
 COPY --from=build /app/.cache ./.cache
 COPY --from=build /app/app ./app
 COPY --from=build /app/web ./web

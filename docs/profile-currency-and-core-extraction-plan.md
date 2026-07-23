@@ -7118,3 +7118,8 @@ frontend adoption.
    - Agents and operators invoke only the consumer wrapper. Direct nested-core
      execution is unsupported because it bypasses bootstrap and product
      configuration.
+   - Post-deploy review fixed Mushroom's Docker image contract: the build stage
+     must copy `vendor/backpack-game-core` before `npm ci`, and the runtime stage
+     must retain `/app/vendor` because the installed file dependency is a
+     symlink. A source-level regression test and real Compose image build guard
+     this requirement.
