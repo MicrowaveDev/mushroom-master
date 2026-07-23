@@ -1,14 +1,13 @@
+import { LeaderboardScreen as CoreLeaderboardScreen } from '@microwavedev/backpack-game-core/vue/pages';
+
 export const LeaderboardScreen = {
-  name: 'LeaderboardScreen',
+  name: 'MushroomLeaderboardScreen',
+  components: { CoreLeaderboardScreen },
   props: ['state', 't'],
   template: `
-    <section class="panel stack">
-      <h2>{{ t.leaderboard }}</h2>
-      <div class="leaderboard-row" v-for="entry in state.leaderboard" :key="entry.id">
-        <strong>#{{ entry.rank }}</strong>
-        <span>{{ entry.name }}</span>
-        <span>{{ entry.rating }}</span>
-      </div>
-    </section>
+    <core-leaderboard-screen
+      :entries="state.leaderboard"
+      :title="t.leaderboard"
+    />
   `
 };

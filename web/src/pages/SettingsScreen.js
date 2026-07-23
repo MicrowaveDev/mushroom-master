@@ -1,54 +1,51 @@
+import { SettingsScreen as CoreSettingsScreen } from '@microwavedev/backpack-game-core/vue/pages';
+
 export const SettingsScreen = {
-  name: 'SettingsScreen',
+  name: 'MushroomSettingsScreen',
+  components: { CoreSettingsScreen },
   props: ['state', 't'],
   emits: ['save-settings'],
+  computed: {
+    labels() {
+      return {
+        title: this.t.settings,
+        language: this.t.language,
+        reducedMotion: this.t.reducedMotion,
+        battleSpeed: this.t.battleSpeed,
+        mobileActionsMode: this.t.mobileActionsMode,
+        mobileActionsAuto: this.t.mobileActionsAuto,
+        mobileActionsAlways: this.t.mobileActionsAlways,
+        mobileActionsSide: this.t.mobileActionsSide,
+        mobileActionsMenu: this.t.mobileActionsMenu,
+        save: this.t.save
+      };
+    }
+  },
+  methods: {
+    updateLocale(value) {
+      this.state.lang = value;
+    },
+    updateReducedMotion(value) {
+      this.state.bootstrap.settings.reducedMotion = value;
+    },
+    updateBattleSpeed(value) {
+      this.state.bootstrap.settings.battleSpeed = value;
+    },
+    updateMobileActionsMode(value) {
+      this.state.mobileHomeActionsMode = value;
+    }
+  },
   template: `
-    <section class="panel settings-panel">
-      <h2>{{ t.settings }}</h2>
-
-      <label class="setting-row">
-        <span class="setting-label">{{ t.language }}</span>
-        <span class="setting-control">
-          <select class="setting-select" v-model="state.lang">
-            <option value="ru">RU</option>
-            <option value="en">EN</option>
-          </select>
-        </span>
-      </label>
-
-      <label class="setting-row">
-        <span class="setting-label">{{ t.reducedMotion }}</span>
-        <span class="setting-toggle">
-          <input type="checkbox" v-model="state.bootstrap.settings.reducedMotion" />
-          <span class="setting-toggle-track"><span class="setting-toggle-thumb"></span></span>
-        </span>
-      </label>
-
-      <label class="setting-row">
-        <span class="setting-label">{{ t.battleSpeed }}</span>
-        <span class="setting-control">
-          <select class="setting-select" v-model="state.bootstrap.settings.battleSpeed">
-            <option value="1x">1x</option>
-            <option value="2x">2x</option>
-          </select>
-        </span>
-      </label>
-
-      <label class="setting-row">
-        <span class="setting-label">{{ t.mobileActionsMode }}</span>
-        <span class="setting-control">
-          <select class="setting-select" v-model="state.mobileHomeActionsMode">
-            <option value="auto">{{ t.mobileActionsAuto }}</option>
-            <option value="always">{{ t.mobileActionsAlways }}</option>
-            <option value="side">{{ t.mobileActionsSide }}</option>
-            <option value="menu">{{ t.mobileActionsMenu }}</option>
-          </select>
-        </span>
-      </label>
-
-      <div class="setting-actions">
-        <button class="primary setting-save" type="button" @click="$emit('save-settings')">{{ t.save }}</button>
-      </div>
-    </section>
+    <core-settings-screen
+      :settings="state.bootstrap.settings"
+      :locale="state.lang"
+      :mobile-actions-mode="state.mobileHomeActionsMode"
+      :labels="labels"
+      @update:locale="updateLocale"
+      @update:reduced-motion="updateReducedMotion"
+      @update:battle-speed="updateBattleSpeed"
+      @update:mobile-actions-mode="updateMobileActionsMode"
+      @save="$emit('save-settings')"
+    />
   `
 };
