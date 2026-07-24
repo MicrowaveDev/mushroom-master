@@ -42,7 +42,15 @@ export const HomeScreen = {
         getNextRunAchievementHint,
         buildFriendInviteLink,
         shareTelegramText,
-        artifactFusionRecipes
+        artifactFusionRecipes,
+        compatibilityClasses: {
+          row: 'home-mushroom-row',
+          rowActive: 'home-mushroom-row--active',
+          stats: 'home-mushroom-stats',
+          statsOpen: 'home-mushroom-stats--open',
+          statsPopover: 'home-mushroom-stats-popover',
+          picker: 'home-mushroom-picker'
+        }
       }
     };
   },
@@ -105,6 +113,7 @@ export const HomeScreen = {
       :share-invite-value="homeAdapters.shareTelegramText"
       :fusion-recipes="homeAdapters.artifactFusionRecipes"
       progression-currency-icon="🍄"
+      :compatibility-classes="homeAdapters.compatibilityClasses"
       @resume-run="$emit('resume-run')"
       @start-run="$emit('start-run', $event)"
       @abandon-run="$emit('abandon-run')"

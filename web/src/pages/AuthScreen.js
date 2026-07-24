@@ -57,6 +57,7 @@ export const AuthScreen = {
       :catalog-counts="counts"
       :auth-code="state.authCode"
       :dev-auth-enabled="isLocalDevAuthEnabled"
+      portrait-data-attribute="data-mushroom-id"
       @update:locale="updateLocale"
       @login-primary="$emit('login-telegram')"
       @login-browser="$emit('login-browser')"
