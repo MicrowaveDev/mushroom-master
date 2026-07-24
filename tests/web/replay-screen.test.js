@@ -1,13 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ReplayDetailScreen } from '@microwavedev/backpack-game-core/vue/pages';
 import { ReplayScreen } from '../../web/src/pages/ReplayScreen.js';
 
 function viewModel(state, extra = {}) {
-  const vm = { state, ...extra };
-  for (const [key, method] of Object.entries(ReplayScreen.methods)) {
+  const wrapper = { t: extra.t || {} };
+  const vm = {
+    state,
+    ...extra,
+    t: ReplayScreen.computed.normalizedText.call(wrapper),
+    getCharacter: extra.getMushroom,
+    profileRewardKey: 'spore',
+    progressionRewardKey: 'mycelium',
+    progressionRewardIcon: '🍄',
+    getSnapshotCharacterId: ReplayScreen.methods.snapshotMushroomId
+  };
+  for (const [key, method] of Object.entries(ReplayDetailScreen.methods)) {
     vm[key] = method.bind(vm);
   }
-  for (const [key, getter] of Object.entries(ReplayScreen.computed)) {
+  for (const [key, getter] of Object.entries(ReplayDetailScreen.computed)) {
     Object.defineProperty(vm, key, {
       enumerable: true,
       get: () => getter.call(vm)
@@ -17,10 +28,11 @@ function viewModel(state, extra = {}) {
 }
 
 test('[Req 13-A] replay screen wrapper delegates neutral page shell to core', () => {
-  assert.equal(ReplayScreen.components.CoreReplayScreen.name, 'ReplayScreen');
-  assert.match(ReplayScreen.template, /core-replay-screen/);
-  assert.match(ReplayScreen.template, /#battle-stage/);
-  assert.match(ReplayScreen.template, /@select-log-row="selectReplayLogRow"/);
+  assert.equal(ReplayScreen.components.ReplayDetailScreen.name, 'ReplayDetailScreen');
+  assert.match(ReplayScreen.template, /ReplayDetailScreen/);
+  assert.match(ReplayScreen.template, /get-snapshot-character-id/);
+  assert.match(ReplayDetailScreen.template, /#battle-stage/);
+  assert.match(ReplayDetailScreen.template, /@select-log-row="selectReplayLogRow"/);
 });
 
 test('[Req 1-E, 13-B] replay rewards use fresh resolved run totals after terminal loss', () => {
@@ -126,8 +138,8 @@ test('[Req 13-B] replay screen shapes result DTOs for the shared page shell', ()
     summary: 'Hero won'
   });
   assert.deepEqual(vm.rewardsPanel.stats.map((stat) => [stat.key, stat.label, stat.value, stat.className]), [
-    ['spore', 'Spores', '+2', 'stat--pos'],
-    ['mycelium', 'Mycelium', '+5', 'stat--pos'],
+    ['profileCurrency', 'Spores', '+2', 'stat--pos'],
+    ['progressionCurrency', 'Mycelium', '+5', 'stat--pos'],
     ['rating', 'Rating', '+12', 'stat--pos']
   ]);
   assert.deepEqual(vm.rewardsPanel.runStatus.map((item) => [item.key, item.value]), [
