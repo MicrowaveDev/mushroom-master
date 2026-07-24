@@ -42,13 +42,12 @@ import { SettingsScreen } from './pages/SettingsScreen.js';
 // Existing components
 import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
 import { FighterCard } from './components/FighterCard.js';
-import { HomeSocialSidebar } from './components/HomeSocialSidebar.js';
 
 const ReplayDuel = defineAsyncComponent(() => import('./components/ReplayDuel.js').then(m => m.ReplayDuel));
 
 const App = {
   components: {
-    ArtifactGridBoard, FighterCard, ReplayDuel, HomeSocialSidebar,
+    ArtifactGridBoard, FighterCard, ReplayDuel,
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,

@@ -1,18 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { HomeScreen } from '../../web/src/pages/HomeScreen.js';
+import { HomeScreen as CoreHomeScreen } from '@microwavedev/backpack-game-core/vue/pages';
+import { HomeScreen as MushroomHomeScreen } from '../../web/src/pages/HomeScreen.js';
 import { messages } from '../../web/src/i18n.js';
 
 function viewModel(state, extra = {}) {
-  const vm = {
+  const wrapper = {
     state,
-    t: messages[state.lang || 'en'],
+    t: messages[state.lang || 'en']
+  };
+  const homeAdapters = MushroomHomeScreen.data().homeAdapters;
+  const vm = {
+    state: MushroomHomeScreen.computed.normalizedState.call(wrapper),
+    t: MushroomHomeScreen.computed.normalizedText.call(wrapper),
+    getSeasonProgressSummary: homeAdapters.getSeasonProgressSummary,
+    getAchievementsByIds: homeAdapters.getRunAchievementsByIds,
+    getNextAchievementHint: homeAdapters.getNextRunAchievementHint,
     ...extra
   };
-  for (const [key, method] of Object.entries(HomeScreen.methods || {})) {
+  for (const [key, method] of Object.entries(CoreHomeScreen.methods || {})) {
     vm[key] = method.bind(vm);
   }
-  for (const [key, getter] of Object.entries(HomeScreen.computed)) {
+  for (const [key, getter] of Object.entries(CoreHomeScreen.computed)) {
     Object.defineProperty(vm, key, {
       enumerable: true,
       get: () => getter.call(vm)

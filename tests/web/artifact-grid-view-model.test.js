@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildOccupancy, preferredOrientation } from '../../web/src/artifacts/grid.js';
+import { HomeSocialSidebar } from '@microwavedev/backpack-game-core/vue/components';
 import { ArtifactCatalogBrowser } from '../../web/src/components/ArtifactCatalogBrowser.js';
 import { FighterCard } from '../../web/src/components/FighterCard.js';
-import { HomeSocialSidebar } from '../../web/src/components/HomeSocialSidebar.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
 import { FusionReveal } from '../../web/src/components/prep/FusionReveal.js';
 import { InventoryZone } from '../../web/src/components/prep/InventoryZone.js';
@@ -335,6 +335,7 @@ test('[artifact-grid] recipe surfaces keep Mushroom compatibility over core reci
   const context = {
     getArtifact: (id) => catalog.get(id),
     state: { lang: 'en' },
+    fusionRecipes: artifactFusionRecipes,
     artifactName: HomeSocialSidebar.methods.artifactName,
     artifactDescription: HomeSocialSidebar.methods.artifactDescription
   };
