@@ -16,6 +16,7 @@ import { useDevTools } from './composables/useDevTools.js';
 import { useCustomization } from './composables/useCustomization.js';
 import { useTelegramWebApp } from './composables/useTelegramWebApp.js';
 import { createReducedMotionTracker } from './composables/useReducedMotion.js';
+import { HistoryScreen, SupportAdminScreen } from '@microwavedev/backpack-game-core/vue/pages';
 
 // Page components
 // Legacy single-battle screens (ArtifactsScreen, BattlePrepScreen, ResultsScreen)
@@ -37,7 +38,6 @@ import { FusionAnimationLabScreen } from './pages/FusionAnimationLabScreen.js';
 import { HomeFieldPreviewScreen } from './pages/HomeFieldPreviewScreen.js';
 import { ProfileScreen } from './pages/ProfileScreen.js';
 import { SettingsScreen } from './pages/SettingsScreen.js';
-import { SupportAdminScreen } from './pages/SupportAdminScreen.js';
 
 // Existing components
 import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
@@ -52,7 +52,7 @@ const App = {
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
-    FriendsScreen, LeaderboardScreen, WikiScreen, WikiDetailScreen, RecipesScreen,
+    FriendsScreen, LeaderboardScreen, HistoryScreen, WikiScreen, WikiDetailScreen, RecipesScreen,
     FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen, SupportAdminScreen
   },
   setup() {
@@ -727,38 +727,13 @@ const App = {
           @set-speed="setReplaySpeed($event)"
         />
 
-        <section v-else-if="state.screen === 'history'" class="panel stack">
-          <h2>{{ t.runHistory }}</h2>
-          <p v-if="!state.bootstrap.gameRunHistory?.length">{{ t.noGameRunsYet }}</p>
-          <ul v-else class="run-list">
-            <li
-              v-for="run in state.bootstrap.gameRunHistory"
-              :key="run.id"
-              class="run-card"
-              :class="'run-card--' + (describeRun(run)?.outcomeKey || 'abandoned')"
-              @click="loadRunSummary(run.id)"
-              role="button" tabindex="0"
-              @keydown.enter.prevent="loadRunSummary(run.id)"
-              @keydown.space.prevent="loadRunSummary(run.id)"
-            >
-              <div class="run-card-header">
-                <span class="run-card-outcome">{{ describeRun(run)?.outcomeLabel }}</span>
-                <span class="run-card-meta">
-                  <span class="run-card-kind">{{ describeRun(run)?.modeLabel }}</span>
-                  <span class="run-card-date">{{ describeRun(run)?.dateLabel }}</span>
-                </span>
-              </div>
-              <div class="run-card-matchup">
-                <div class="run-card-fighter">
-                  <img v-if="describeRun(run)?.ourImage" :src="describeRun(run).ourImage" :alt="describeRun(run)?.ourName" class="run-card-portrait" />
-                  <span class="run-card-name">{{ describeRun(run)?.ourName }}</span>
-                </div>
-                <span class="run-card-vs">·</span>
-                <span class="run-card-name">{{ t.runStatsRecord.replace('{wins}', describeRun(run)?.wins).replace('{losses}', describeRun(run)?.losses).replace('{rounds}', describeRun(run)?.completedRounds) }}</span>
-              </div>
-            </li>
-          </ul>
-        </section>
+        <history-screen
+          v-else-if="state.screen === 'history'"
+          :runs="state.bootstrap.gameRunHistory || []"
+          :describe-run="describeRun"
+          :labels="{ title: t.runHistory, empty: t.noGameRunsYet, record: t.runStatsRecord }"
+          @open-run="loadRunSummary($event.id)"
+        />
 
         <friends-screen v-else-if="state.screen === 'friends'"
           :state="state" :t="t"

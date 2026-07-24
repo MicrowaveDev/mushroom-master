@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SupportAdminScreen } from '../../web/src/pages/SupportAdminScreen.js';
+import { SupportAdminScreen } from '@microwavedev/backpack-game-core/vue/pages';
 
 function viewModel(overrides = {}) {
   const vm = {
