@@ -16,6 +16,7 @@ import { useDevTools } from './composables/useDevTools.js';
 import { useCustomization } from './composables/useCustomization.js';
 import { useTelegramWebApp } from './composables/useTelegramWebApp.js';
 import { createReducedMotionTracker } from './composables/useReducedMotion.js';
+import { GameShell } from '@microwavedev/backpack-game-core/vue/app';
 import { HistoryScreen, SupportAdminScreen } from '@microwavedev/backpack-game-core/vue/pages';
 
 // Page components
@@ -44,10 +45,11 @@ import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
 import { FighterCard } from './components/FighterCard.js';
 
 const ReplayDuel = defineAsyncComponent(() => import('./components/ReplayDuel.js').then(m => m.ReplayDuel));
+const shellScreenRegistry = Object.freeze({});
 
 const App = {
   components: {
-    ArtifactGridBoard, FighterCard, ReplayDuel,
+    ArtifactGridBoard, FighterCard, ReplayDuel, GameShell,
     AuthScreen, OnboardingScreen, HomeScreen, CharactersScreen,
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
@@ -144,6 +146,37 @@ const App = {
     const gs = useGameState(state, {
       shouldAnimate: () => !motionTracker.getValue()
     });
+    const shellAuthStatus = computed(() => {
+      if (state.screen === 'home-field-preview') {
+        return state.sessionKey && state.bootstrap ? 'authenticated' : 'unauthenticated';
+      }
+      if (state.loading && state.showLoading) return 'loading';
+      if (state.sessionKey && state.bootstrap) return 'authenticated';
+      if (!state.sessionKey) return 'unauthenticated';
+      return 'loading';
+    });
+    const shellNavigationItems = computed(() => {
+      const tr = gs.t.value;
+      return [
+        { id: 'home', label: tr.home },
+        { id: 'characters', label: tr.characters },
+        { id: 'friends', label: tr.friends },
+        { id: 'leaderboard', label: tr.leaderboard },
+        { id: 'profile', label: tr.profile },
+        { id: 'wiki', label: tr.wiki, activeScreenIds: ['wiki-detail'] },
+        { id: 'recipes', label: tr.recipes },
+        ...(gs.isLocalDevAuthEnabled.value
+          ? [{ id: 'fusion-lab', label: tr.fusionLab }]
+          : []),
+        { id: 'settings', label: tr.settings }
+      ];
+    });
+    const shellLabels = computed(() => ({
+      menu: 'Menu',
+      close: 'Close',
+      navigation: 'Menu',
+      logout: gs.t.value.logout
+    }));
     const auth = useAuth(state, gs.goTo, telegram);
     const replay = useReplay(state, gs.goTo, gs.getMushroom);
     const gameRun = useGameRun(state, gs.goTo, gs.getArtifact, auth.refreshBootstrap, replay.loadReplay, telegram);
@@ -234,6 +267,14 @@ const App = {
 
     function closeGameSidebarPanel() {
       state.gameSidebarPanel = '';
+    }
+
+    function setShellLocale(locale) {
+      state.lang = locale;
+    }
+
+    function setShellMenuOpen(open) {
+      state.menuOpen = open;
     }
 
     function activityDayLabel(date) {
@@ -440,6 +481,12 @@ const App = {
 
     return {
       state, ...gs, ...shop, ...gameRun, ...replay, ...social,
+      shellScreenRegistry,
+      shellAuthStatus,
+      shellNavigationItems,
+      shellLabels,
+      setShellLocale,
+      setShellMenuOpen,
       refreshBootstrap: auth.refreshBootstrap,
       loginViaTelegram: auth.loginViaTelegram,
       loginViaBrowserCode: auth.loginViaBrowserCode,
@@ -461,21 +508,46 @@ const App = {
     };
   },
   template: `
-    <div class="shell">
-      <header v-if="state.sessionKey && state.bootstrap" class="app-header">
-        <button class="menu-toggle" @click="toggleMenu" :aria-expanded="state.menuOpen" aria-label="Menu">
-          <span class="menu-toggle-bar"></span>
-          <span class="menu-toggle-bar"></span>
-          <span class="menu-toggle-bar"></span>
-        </button>
-        <span class="app-header-title">{{ t.title }}</span>
-        <div class="lang-toggle-group">
-          <button class="lang-toggle-btn" :class="{ active: state.lang === 'ru' }" @click="state.lang = 'ru'">RU</button>
-          <button class="lang-toggle-btn" :class="{ active: state.lang === 'en' }" @click="state.lang = 'en'">EN</button>
-        </div>
-      </header>
+    <game-shell
+      :registry="shellScreenRegistry"
+      :current-screen-id="state.screen"
+      :navigation-items="shellNavigationItems"
+      :title="t.title"
+      :labels="shellLabels"
+      :auth-status="shellAuthStatus"
+      :locale="state.lang"
+      :locales="['ru', 'en']"
+      :menu-open="state.menuOpen"
+      show-logout
+      @navigate="goTo($event)"
+      @logout="handleLogout"
+      @locale-change="setShellLocale"
+      @menu-change="setShellMenuOpen"
+    >
+      <template #loading>
+        <section v-if="state.loading && state.showLoading" class="route-loading-screen" data-testid="app-loading">
+          <div class="route-loading-card panel">
+            <span class="route-loading-spinner" aria-hidden="true"></span>
+            <h2>{{ t.title }}</h2>
+          </div>
+        </section>
+        <section v-else class="route-loading-screen" data-testid="app-pending" aria-hidden="true"></section>
+      </template>
 
-      <template v-if="state.sessionKey && state.bootstrap && showGameSocialActions()">
+      <template #unauthenticated>
+        <home-field-preview-screen v-if="state.screen === 'home-field-preview'" />
+        <auth-screen
+          v-else
+          :state="state" :t="t" :is-local-dev-auth-enabled="isLocalDevAuthEnabled"
+          @login-telegram="loginViaTelegram"
+          @login-browser="loginViaBrowserCode"
+          @login-dev="loginViaDevSession"
+          @cancel-telegram-code="cancelTelegramCodeLogin"
+        />
+      </template>
+
+      <template #screen>
+      <template v-if="showGameSocialActions()">
         <div class="home-action-rail game-social-action-rail" :class="{ 'home-action-rail--mobile': gameSidebarMode() === 'side' }">
           <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openGameSidebarPanel('notifications')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
@@ -546,57 +618,8 @@ const App = {
         </nav>
       </template>
 
-      <div
-        v-if="state.error"
-        class="error app-notification app-notification--error"
-        role="alert"
-        aria-live="assertive"
-        data-testid="error-notification"
-      >
-        {{ state.error }}
-      </div>
-
       <home-field-preview-screen v-if="state.screen === 'home-field-preview'" />
-
-      <section v-else-if="state.loading && state.showLoading" class="route-loading-screen" data-testid="app-loading">
-        <div class="route-loading-card panel">
-          <span class="route-loading-spinner" aria-hidden="true"></span>
-          <h2>{{ t.title }}</h2>
-        </div>
-      </section>
-
-      <auth-screen
-        v-else-if="!state.sessionKey"
-        :state="state" :t="t" :is-local-dev-auth-enabled="isLocalDevAuthEnabled"
-        @login-telegram="loginViaTelegram"
-        @login-browser="loginViaBrowserCode"
-        @login-dev="loginViaDevSession"
-        @cancel-telegram-code="cancelTelegramCodeLogin"
-      />
-
-      <template v-else-if="state.bootstrap">
-        <template v-if="state.menuOpen">
-          <div class="nav-sidebar-backdrop" @click="state.menuOpen = false"></div>
-          <aside class="nav-sidebar" aria-label="Menu">
-            <div class="home-section-header">
-              <h3>{{ t.title }}</h3>
-              <button class="ghost nav-sidebar-close" @click="state.menuOpen = false" aria-label="Close">×</button>
-            </div>
-            <nav class="nav-sidebar-list">
-              <button class="nav-btn" :class="{ active: state.screen === 'home' }" @click="goTo('home')">{{ t.home }}</button>
-              <button class="nav-btn" :class="{ active: state.screen === 'characters' }" @click="goTo('characters')">{{ t.characters }}</button>
-              <button class="nav-btn" :class="{ active: state.screen === 'friends' }" @click="goTo('friends')">{{ t.friends }}</button>
-              <button class="nav-btn" :class="{ active: state.screen === 'leaderboard' }" @click="goTo('leaderboard')">{{ t.leaderboard }}</button>
-              <button class="nav-btn" :class="{ active: state.screen === 'profile' }" @click="goTo('profile')">{{ t.profile }}</button>
-              <button class="nav-btn" :class="{ active: state.screen === 'wiki' || state.screen === 'wiki-detail' }" @click="goTo('wiki')">{{ t.wiki }}</button>
-              <button class="nav-btn" :class="{ active: state.screen === 'recipes' }" @click="goTo('recipes')">{{ t.recipes }}</button>
-              <button v-if="isLocalDevAuthEnabled" class="nav-btn" :class="{ active: state.screen === 'fusion-lab' }" @click="goTo('fusion-lab')">{{ t.fusionLab }}</button>
-              <button class="nav-btn" :class="{ active: state.screen === 'settings' }" @click="goTo('settings')">{{ t.settings }}</button>
-              <button class="nav-btn nav-btn--logout" data-testid="menu-logout" @click="handleLogout">{{ t.logout }}</button>
-            </nav>
-          </aside>
-        </template>
-
+      <template v-else>
         <section v-if="state.screen === 'firstRunStarting' || state.startingFirstRun" class="route-loading-screen" data-testid="first-run-starting">
           <div class="route-loading-card panel">
             <span class="route-loading-spinner" aria-hidden="true"></span>
@@ -773,14 +796,18 @@ const App = {
           </article>
         </section>
       </template>
+      </template>
 
-      <section v-else-if="state.sessionKey" class="route-loading-screen" data-testid="app-pending" aria-hidden="true"></section>
-
-      <section v-else class="panel stack">
-        <h2>{{ t.authTitle }}</h2>
-        <p>{{ t.authTagline }}</p>
-      </section>
-
+      <template #overlays>
+      <div
+        v-if="state.error"
+        class="error app-notification app-notification--error"
+        role="alert"
+        aria-live="assertive"
+        data-testid="error-notification"
+      >
+        {{ state.error }}
+      </div>
       <div
         v-if="state.abandonConfirmOpen"
         class="confirm-backdrop"
@@ -809,7 +836,8 @@ const App = {
           </div>
         </section>
       </div>
-    </div>
+      </template>
+    </game-shell>
   `
 };
 
