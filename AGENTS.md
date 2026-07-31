@@ -85,6 +85,29 @@ first, then stage the nested submodule pointer plus any `package-lock.json` /
 adapter changes in `mushroom-master`; do not hand off with only a dirty nested
 submodule pointer.
 
+Apply a core-first implementation rule before writing Mushroom Battles code.
+If behavior can serve both Mushroom and Meat after supplying product
+configuration, content, callbacks, or adapters, implement it in
+`vendor/backpack-game-core` from the start. Do not first build or copy a shared
+implementation in Mushroom with the intention of extracting it later.
+
+The core-first rule covers gameplay/domain logic, backend modules and service
+contracts, auth/profile/wallet/gacha/payment abstractions, Telegram runtime,
+persistence-neutral repositories, Vue components/pages/composables/services,
+shared styles and locale-aware UI structure, asset pipelines, command engines,
+and deployment helpers. When core lacks the needed extension point, add that
+extension point and its tests in core in the same task. Mushroom-local code at
+a shared boundary should be limited to product composition: environment
+parsing, module lists, route mounting, database/dialect wiring, product content
+and locales, art/catalog data, policy, callbacks, and thin configured wrappers.
+Product-specific extensions may stay local, but they must consume public core
+facades instead of forking core behavior.
+
+For work that changes both layers, sequence it as: implement and test core;
+commit and push core; update the Mushroom pointer and adapters; run Mushroom
+parity tests; then commit and push Mushroom. A dirty nested submodule or
+duplicated local fallback is not a completed implementation.
+
 Before searching or adding core code, route the concern through
 `vendor/backpack-game-core/docs/architecture-routing.md`. Prefer its domain
 facades (`modules/loadout`, `modules/gacha`, `modules/wallet`, and so on), keep
