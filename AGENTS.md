@@ -48,6 +48,11 @@ instructions or handoffs.
 - Reuse Node-only engines from `@microwavedev/backpack-game-core/tooling/*` and
   keep local files as configured wrappers. Do not import core source paths or
   run scripts from inside `vendor/backpack-game-core` directly.
+- Use `@microwavedev/backpack-game-core/tooling/geesome-assets` for Geesome
+  transport, manifests, read-back verification, and hydration. Mushroom keeps
+  its credentials, remote namespace, portrait catalog, paths, and publication
+  policy; never commit `GEESOME_API_KEY` or delete tracked portraits before a
+  verified manifest and clean-cache build exist.
 - Keep the `app/scripts/` root limited to `README.md` and
   `command-manifest.json`. Do not add executable files there.
 - Prefer npm aliases in instructions, queue output, tests, and runbooks instead

@@ -185,5 +185,5 @@ test('[scripts] documentation and manifest cover the supported command surface',
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Script documentation OK: 78 commands in 9 families and 6 directories/);
+  assert.match(result.stdout, /Script documentation OK: 80 commands in 10 families and 6 directories/);
 });

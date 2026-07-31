@@ -2,6 +2,7 @@ node_modules/
 .env
 dist/
 web/dist/
+.cache/game-assets/
 web/public/gacha-plan/
 .DS_Store
 data/

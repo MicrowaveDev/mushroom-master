@@ -18,6 +18,21 @@ files from the nested core checkout directly. Product-configured image,
 workflow, database, and deployment commands remain local wrappers around core
 libraries where appropriate.
 
+<!-- command-family:content-assets -->
+## Store Character Assets
+
+`npm run game:assets:publish:geesome` publishes the current files under
+`web/public/portraits`, reads every immutable CID back, verifies SHA-256, and
+writes `app/shared/geesome-character-assets.json`. It requires `GEESOME_URL`
+and `GEESOME_API_KEY`. `npm run game:assets:hydrate` restores the committed
+runtime entries through `.cache/game-assets/geesome`; set
+`MUSHROOM_MASTER_ASSET_OFFLINE=true` to require a warm verified cache.
+
+The commands use `@microwavedev/backpack-game-core/tooling/geesome-assets`.
+Mushroom owns only its portrait catalog, remote namespace, paths, credentials,
+and the decision to remove tracked binaries. Do not remove portrait files until
+an authenticated publication and clean-cache build have both passed.
+
 ## Directory Layout
 
 The folders describe implementation responsibility, while npm command names

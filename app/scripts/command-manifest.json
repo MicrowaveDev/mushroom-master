@@ -53,6 +53,12 @@
       "commands": ["game:artifacts:next", "game:artifacts:produce", "game:artifacts:release-check", "game:artifacts:sheet", "game:artifacts:thumbnail-review", "game:artifacts:normalize-detail", "game:artifacts:provenance:generate", "game:artifacts:provenance:check", "game:artifacts:validate"]
     },
     {
+      "id": "content-assets",
+      "lifecycle": "canonical",
+      "mutation": "production files",
+      "commands": ["game:assets:hydrate", "game:assets:publish:geesome"]
+    },
+    {
       "id": "season",
       "lifecycle": "canonical",
       "mutation": "mixed",

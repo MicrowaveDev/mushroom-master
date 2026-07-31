@@ -21,6 +21,8 @@
     "game:start": "node app/scripts/runners/start-game-dev.js",
     "game:start:backend": "node app/server/start.js",
     "game:build": "vite build --config web/vite.config.js",
+    "game:assets:hydrate": "node app/scripts/generation/hydrate-character-assets.js",
+    "game:assets:publish:geesome": "node app/scripts/generation/publish-character-assets-to-geesome.js",
     "game:artifacts:next": "node app/scripts/generation/next-artifact-image-prompts.js",
     "game:artifacts:produce": "node app/scripts/generation/produce-artifact-bitmaps.js",
     "game:artifacts:release-check": "node app/scripts/checks/run-artifact-release-check.js",
