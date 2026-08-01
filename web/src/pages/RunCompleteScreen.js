@@ -1,11 +1,10 @@
 import { getEarnedRunAchievements, getRunAchievementsByIds } from '../../../app/shared/run-achievements.js';
 import { getRunSeasonSummary, getSeasonProgressSummary, getSeasonPointsBreakdown } from '../../../app/shared/season-levels.js';
-import { SeasonRankEmblem } from '../components/SeasonRankEmblem.js';
-import { AchievementBadge } from '../components/AchievementBadge.js';
+import { RunCompleteScreen as CoreRunCompleteScreen } from '@microwavedev/backpack-game-core/vue/components';
 
 export const RunCompleteScreen = {
   name: 'RunCompleteScreen',
-  components: { SeasonRankEmblem, AchievementBadge },
+  components: { CoreRunCompleteScreen },
   props: ['state', 't'],
   emits: ['go-home', 'play-again'],
   computed: {
@@ -54,7 +53,7 @@ export const RunCompleteScreen = {
         key: `${index}-${outcome}`,
         icon: outcome === 'win' ? '🏆' : '💔',
         label: outcome === 'win' ? this.t.outcomeWin : this.t.outcomeLoss,
-        className: outcome === 'win' ? 'run-complete-round-icon--win' : 'run-complete-round-icon--loss'
+        tone: outcome
       }));
     },
     seasonSummary() {
@@ -202,6 +201,50 @@ export const RunCompleteScreen = {
         seasonLevel: this.seasonSummary.id,
         seasonPoints: this.seasonSummary.points
       }, this.state.lang || 'en');
+    },
+    summary() {
+      return {
+        tone: this.outcomeTone,
+        title: this.titleText,
+        reason: this.reasonText,
+        timelineLabel: `${this.t.wins}: ${this.wins}, ${this.t.losses}: ${this.losses}`,
+        timeline: this.roundTimeline,
+        earnings: this.runEarnedText ? {
+          label: this.t.earnedThisRun,
+          value: this.runEarnedText
+        } : null,
+        primaryLabel: this.t.playAgain,
+        secondaryLabel: this.t.home,
+        season: {
+          id: this.seasonSummary.id,
+          kicker: this.t.seasonLevel,
+          name: this.seasonSummary.name,
+          lore: this.seasonSummary.lore,
+          points: this.seasonSummary.points,
+          pointsLabel: this.t.seasonPoints,
+          runPointsText: this.seasonSummary.runPoints
+            ? `${this.formattedRunPoints} ${this.t.thisRun}`
+            : '',
+          runPointsTone: this.runPointsTone,
+          progress: this.seasonSummary.progress,
+          peakText: `${this.t.seasonPeakRank}: ${this.seasonSummary.peakName} · ${this.seasonSummary.peakPoints}`,
+          nextText: this.seasonSummary.isMax
+            ? this.t.seasonMaxLevel
+            : `${this.seasonSummary.pointsToNext} ${this.t.seasonPointsToNext} ${this.seasonSummary.nextName}`,
+          leveledUp: this.seasonSummary.leveledUp,
+          leveledDown: this.seasonSummary.leveledDown,
+          imageBasePath: '/season-ranks'
+        },
+        achievements: {
+          title: this.t.achievementsEarned,
+          items: this.earnedAchievements,
+          newLabel: this.t.newAchievement,
+          earnedLabel: this.t.alreadyEarned,
+          emptyTitle: this.t.achievementNoneTitle,
+          emptyHint: this.t.achievementNoneHint,
+          imageBasePath: '/achievements'
+        }
+      };
     }
   },
   mounted() {
@@ -294,16 +337,6 @@ export const RunCompleteScreen = {
         })
       }).catch(() => {});
     },
-    achievementClass(achievement) {
-      return [
-        'run-achievement--' + achievement.type,
-        'run-achievement--accent-' + (achievement.accent || achievement.type),
-        achievement.isNew ? 'run-achievement--new' : 'run-achievement--earned'
-      ];
-    },
-    achievementRevealDelay(index) {
-      return `${760 + index * 180}ms`;
-    },
     fallbackRoundOutcomes() {
       const lastOutcome = this.lastRound?.outcome === 'win' || this.lastRound?.outcome === 'loss'
         ? this.lastRound.outcome
@@ -321,97 +354,10 @@ export const RunCompleteScreen = {
     }
   },
   template: `
-    <section class="run-complete-screen" :class="'run-complete-screen--' + outcomeTone">
-      <div class="panel run-complete-card">
-        <div class="run-complete-hero">
-          <h2>{{ titleText }}</h2>
-          <p class="run-end-reason">{{ reasonText }}</p>
-        </div>
-
-        <div class="run-complete-record" :aria-label="t.wins + ': ' + wins + ', ' + t.losses + ': ' + losses">
-          <span
-            v-for="round in roundTimeline"
-            :key="round.key"
-            class="run-complete-round-icon"
-            :class="round.className"
-            :title="round.label"
-            aria-hidden="true"
-          >{{ round.icon }}</span>
-        </div>
-
-        <p v-if="runEarnedText" class="run-complete-run-earnings">
-          <span class="run-complete-run-earnings-label">{{ t.earnedThisRun }}</span>
-          <span class="run-complete-run-earnings-values">{{ runEarnedText }}</span>
-        </p>
-
-        <div class="run-complete-actions">
-          <button class="primary run-complete-action" @click="$emit('play-again')">{{ t.playAgain }}</button>
-          <button class="secondary run-complete-action run-complete-action--secondary" @click="$emit('go-home')">{{ t.home }}</button>
-        </div>
-      </div>
-
-      <div class="run-complete-details">
-        <section class="run-season-card" :class="['run-season-card--' + seasonSummary.id, { 'run-season-card--level-up': seasonSummary.leveledUp, 'run-season-card--level-down': seasonSummary.leveledDown }]">
-          <div class="run-season-header">
-            <season-rank-emblem class="run-season-emblem" :rank-id="seasonSummary.id" :size="96" />
-
-            <div class="run-season-copy">
-              <p class="run-complete-kicker">{{ t.seasonLevel }}</p>
-              <h3>{{ seasonSummary.name }}</h3>
-              <p>{{ seasonSummary.lore }}</p>
-            </div>
-            <div class="run-season-points-block">
-              <span class="run-season-points-value">{{ seasonSummary.points }}</span>
-              <span class="run-season-points-label">{{ t.seasonPoints }}</span>
-              <span v-if="seasonSummary.runPoints" class="run-season-run-points" :class="runPointsTone">{{ formattedRunPoints }} {{ t.thisRun }}</span>
-            </div>
-          </div>
-          <div class="run-season-meter">
-            <div class="run-season-progress" aria-hidden="true">
-              <span :style="{ width: seasonSummary.progress + '%' }"></span>
-            </div>
-            <div class="run-season-meter-footer">
-              <span class="run-season-peak">{{ t.seasonPeakRank }}: {{ seasonSummary.peakName }} · {{ seasonSummary.peakPoints }}</span>
-              <span class="run-season-next">
-                {{ seasonSummary.isMax ? t.seasonMaxLevel : seasonSummary.pointsToNext + ' ' + t.seasonPointsToNext + ' ' + seasonSummary.nextName }}
-              </span>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="earnedAchievements.length" class="run-achievements" :aria-label="t.achievementsEarned">
-          <div class="run-achievements-heading-row">
-            <p class="run-complete-kicker">{{ t.achievementsEarned }}</p>
-            <span class="run-achievements-count">{{ earnedAchievements.length }}</span>
-          </div>
-          <div class="run-achievement-list">
-            <article
-              v-for="(achievement, index) in earnedAchievements"
-              :key="achievement.id"
-              :style="{ '--achievement-delay': achievementRevealDelay(index) }"
-              class="run-achievement"
-              :class="achievementClass(achievement)"
-            >
-              <achievement-badge :achievement="achievement" size="medium" />
-              <div class="run-achievement-copy">
-                <h3>
-                  {{ achievement.name }}
-                  <span v-if="achievement.isNew" class="run-achievement-new">{{ t.newAchievement }}</span>
-                  <span v-else class="run-achievement-earned">{{ t.alreadyEarned }}</span>
-                </h3>
-                <p>{{ achievement.lore }}</p>
-              </div>
-            </article>
-          </div>
-        </section>
-        <section v-else class="run-achievements run-achievements--empty" :aria-label="t.achievementsEarned">
-          <div class="run-achievements-heading-row">
-            <p class="run-complete-kicker">{{ t.achievementsEarned }}</p>
-          </div>
-          <p class="run-achievements-empty-title">{{ t.achievementNoneTitle }}</p>
-          <p class="run-achievements-empty-copy">{{ t.achievementNoneHint }}</p>
-        </section>
-      </div>
-    </section>
+    <CoreRunCompleteScreen
+      :summary="summary"
+      @primary="$emit('play-again')"
+      @secondary="$emit('go-home')"
+    />
   `
 };

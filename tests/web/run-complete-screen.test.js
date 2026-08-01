@@ -125,9 +125,19 @@ test('run complete recap uses final result stats and last battle details', () =>
   assert.deepEqual(vm.runTotals, { spore: 28, mycelium: 53 });
   assert.equal(vm.runEarnedText, '+28 Spore · +53 Mycelium');
   assert.deepEqual(vm.roundTimeline.map((round) => round.icon), ['🏆', '💔', '🏆', '💔', '💔', '💔']);
+  assert.equal(vm.summary.title, 'Defeat');
+  assert.deepEqual(vm.summary.timeline.map((round) => round.tone), ['win', 'loss', 'win', 'loss', 'loss', 'loss']);
+  assert.equal(vm.summary.earnings.value, '+28 Spore · +53 Mycelium');
+  assert.equal(vm.summary.season.id, 'bronze');
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'thalla_spore_echo'));
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'season_bronze_spore' && achievement.type === 'season'));
   assert.ok(vm.earnedAchievements.some((achievement) => achievement.id === 'last_spore'));
+});
+
+test('run complete page delegates its rendering to the shared core component', () => {
+  assert.equal(RunCompleteScreen.components.CoreRunCompleteScreen.name, 'RunCompleteScreen');
+  assert.match(RunCompleteScreen.template, /<CoreRunCompleteScreen/);
+  assert.doesNotMatch(RunCompleteScreen.template, /run-season-card|run-achievement-list/);
 });
 
 test('fallback achievement calculation preserves season type styling', () => {
@@ -302,7 +312,6 @@ test('run complete recap prefers persisted season and achievement unlocks', () =
   assert.equal(vm.seasonSummary.leveledUp, true);
   assert.equal(vm.seasonBreakdownText, 'Wins +14 / Losses -2 / Full clear +3');
   assert.deepEqual(vm.earnedAchievements.map((achievement) => achievement.id), ['season_diamond_node', 'perfect_circle']);
-  assert.ok(vm.achievementClass(vm.earnedAchievements[0]).includes('run-achievement--season'));
 });
 
 test('run complete recap shows already-earned achievements without marking them new', () => {
@@ -337,32 +346,6 @@ test('run complete recap shows already-earned achievements without marking them 
   assert.equal(vm.earnedAchievements[0].isNew, false);
   assert.equal(vm.formattedRunPoints, '-4');
   assert.equal(vm.runPointsTone, 'run-season-run-points--negative');
-  assert.ok(vm.achievementClass(vm.earnedAchievements[0]).includes('run-achievement--earned'));
-});
-
-test('run complete achievement cards reveal after the section and then one by one', () => {
-  const vm = viewModel({
-    gameRun: { endReason: 'max_rounds' },
-    gameRunResult: {
-      achievements: [
-        { id: 'season_gold_cap', isNew: true },
-        { id: 'first_ring_crossed', isNew: false },
-        { id: 'deep_run', isNew: false }
-      ],
-      player: {
-        completedRounds: 9,
-        wins: 5,
-        losses: 1,
-        livesRemaining: 4
-      }
-    },
-    bootstrap: { activeMushroomId: 'thalla' },
-    lang: 'en'
-  });
-
-  assert.equal(vm.achievementRevealDelay(0), '760ms');
-  assert.equal(vm.achievementRevealDelay(1), '940ms');
-  assert.equal(vm.achievementRevealDelay(2), '1120ms');
 });
 
 test('run complete game-feel hooks log client events when session exists', () => {
