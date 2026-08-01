@@ -60,17 +60,12 @@ export const ShopZone = {
       if (typeof name === 'string') return name;
       return name[this.state.lang] || name.en || name.ru || '';
     },
-    canAfford(rowOrArtifactId) {
-      if (rowOrArtifactId && typeof rowOrArtifactId === 'object') return rowOrArtifactId.canAfford;
-      return this.getArtifactPrice(this.getArtifact(rowOrArtifactId)) <= (this.state.gameRun.player?.coins || 0);
-    },
     offerClass(row) {
       const artifact = row?.artifact || this.getArtifact(row);
       const artifactId = row?.artifactId || row;
       const price = row?.price ?? this.getArtifactPrice(artifact);
       const visual = artifactVisualClassification(artifact);
       return {
-        'shop-item--expensive': row?.unavailable ?? price > (this.state.gameRun.player?.coins || 0),
         'shop-item--bag': artifact?.family === 'bag',
         'shop-item--tier2': price === 2 && artifact?.family !== 'bag',
         'shop-item--tier3': price >= 3,
@@ -108,7 +103,6 @@ export const ShopZone = {
         'data-fusion-candidate': this.isFusionCandidate(artifactId) ? 'true' : null,
         'data-artifact-width': orientation.width,
         'data-artifact-height': orientation.height,
-        'aria-disabled': this.canAfford(row) ? null : 'true',
         title: this.isFusionCandidate(artifactId) ? (this.t?.fusionCandidateHint || this.t?.recipes) : null
       };
     }

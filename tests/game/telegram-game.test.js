@@ -127,6 +127,7 @@ test('[telegram-game] ensureTelegramWebhook sets webhook when missing', async ()
   assert.deepEqual(result, {
     changed: true,
     previousUrl: '',
+    previousError: null,
     url: 'https://mushroombattles.com/api/bot/webhook'
   });
   assert.equal(calls.length, 2);
@@ -149,7 +150,13 @@ test('[telegram-game] ensureTelegramWebhook skips set when URL already matches',
       calls.push({ method, body: JSON.parse(options.body) });
       return {
         async json() {
-          return { ok: true, result: { url: 'https://mushroombattles.com/api/bot/webhook' } };
+          return {
+            ok: true,
+            result: {
+              url: 'https://mushroombattles.com/api/bot/webhook',
+              allowed_updates: ['message', 'callback_query', 'pre_checkout_query']
+            }
+          };
         }
       };
     }
