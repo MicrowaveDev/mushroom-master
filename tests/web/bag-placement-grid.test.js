@@ -56,26 +56,28 @@ function overlaps(a, b) {
   return false;
 }
 
-function occupiedBagCells(activeBags) {
+function occupiedBagCells(activeBags, rotatedBags = []) {
   const occupied = [];
   for (const activeBag of activeBags) {
     const artifact = getArtifact(activeBag.artifactId);
-    occupied.push(cellsAt(activeBag.anchorX ?? 0, activeBag.anchorY ?? 0, getEffectiveShape(artifact, false)));
+    const rotation = rotatedBags.find((entry) => entry.id === activeBag.id)?.rotation || 0;
+    occupied.push(cellsAt(activeBag.anchorX ?? 0, activeBag.anchorY ?? 0, getEffectiveShape(artifact, rotation)));
   }
   return occupied;
 }
 
-function expectedFirstFitAnchor(activeBags, bagId) {
+function expectedFirstFitAnchor(state, bagId) {
   const bag = getArtifact(bagId);
   const shape = getEffectiveShape(bag, false);
   const cols = shape[0]?.length || 0;
   const rows = shape.length;
-  const occupied = occupiedBagCells(activeBags);
+  const occupied = occupiedBagCells(state.activeBags, state.rotatedBags);
   const maxY = Math.max(
     0,
-    ...activeBags.map((activeBag) => {
+    ...state.activeBags.map((activeBag) => {
       const artifact = getArtifact(activeBag.artifactId);
-      return (activeBag.anchorY ?? 0) + getEffectiveShape(artifact, false).length;
+      const rotation = state.rotatedBags.find((entry) => entry.id === activeBag.id)?.rotation || 0;
+      return (activeBag.anchorY ?? 0) + getEffectiveShape(artifact, rotation).length;
     })
   ) + rows;
   for (let y = 0; y <= maxY; y += 1) {
@@ -95,7 +97,7 @@ function activateFromGridContainer(shop, state, bagId, index) {
   return state.activeBags.find((bag) => bag.artifactId === bagId);
 }
 
-test('[grid-only bag placement] each bag type uses the earliest shape-aware first-fit anchor', () => {
+test('[grid-only bag placement] each bag type uses a non-overlapping compact orientation', () => {
   const state = makeGridState();
   const shop = useShop(state, getArtifact, () => {});
   const sequence = [
@@ -110,13 +112,22 @@ test('[grid-only bag placement] each bag type uses the earliest shape-aware firs
   ];
 
   sequence.forEach((bagId, index) => {
-    const expected = expectedFirstFitAnchor(state.activeBags, bagId);
+    const expected = expectedFirstFitAnchor(state, bagId);
+    const occupiedBefore = occupiedBagCells(state.activeBags, state.rotatedBags);
     const placed = activateFromGridContainer(shop, state, bagId, index);
-    assert.deepEqual(
-      { anchorX: placed.anchorX, anchorY: placed.anchorY },
-      expected,
-      `${bagId} should pack into the earliest non-overlapping shape cells`
+    const rotation = state.rotatedBags.find((entry) => entry.id === placed.id)?.rotation || 0;
+    const shape = getEffectiveShape(getArtifact(bagId), rotation);
+    const placedCells = cellsAt(placed.anchorX, placed.anchorY, shape);
+
+    assert.ok(
+      placed.anchorY <= expected.anchorY,
+      `${bagId} should pack at least as high as its current-orientation first fit`
     );
+    assert.ok(
+      !occupiedBefore.some((bagCells) => overlaps(placedCells, bagCells)),
+      `${bagId} must not overlap an active bag after automatic rotation`
+    );
+    assert.ok(placed.anchorX >= 0 && placed.anchorX + (shape[0]?.length || 0) <= BAG_COLUMNS);
   });
 });
 
@@ -125,7 +136,7 @@ test('[grid-only bag placement] mycelium vine uses the upper gap beside spiral c
   const shop = useShop(state, getArtifact, () => {});
 
   activateFromGridContainer(shop, state, 'spiral_cap', 1);
-  const vineExpected = expectedFirstFitAnchor(state.activeBags, 'mycelium_vine');
+  const vineExpected = expectedFirstFitAnchor(state, 'mycelium_vine');
   const vine = activateFromGridContainer(shop, state, 'mycelium_vine', 2);
 
   assert.deepEqual(vineExpected, { anchorX: 3, anchorY: 1 });

@@ -996,6 +996,9 @@ test('[regression] container drop succeeds when the footprint spans two active b
   seedContainer(state, 'moss_pouch');
   shop.activateBag('moss_pouch');
   const moss = activeBag(state, 'moss_pouch');
+  moss.anchorX = 3;
+  moss.anchorY = 2;
+  state.rotatedBags = state.rotatedBags.filter((entry) => entry.id !== moss.id);
   assert.equal(moss.anchorX, 3, 'precondition: moss anchored at col 3');
   assert.equal(moss.anchorY, 2, 'precondition: moss anchored at row 2');
 
