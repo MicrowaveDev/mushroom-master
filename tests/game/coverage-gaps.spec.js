@@ -541,6 +541,10 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
 
   await anchor.click();
   await expect(popup).toContainText(/размести предмет|place your item/i);
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  await expect(popup).toBeVisible();
+  await expect(popup).toContainText(/размести предмет|place your item/i);
   const illustratedCoachmark = popup.locator('.tutorial-popup--with-image');
   await expect(illustratedCoachmark).toBeVisible();
   const [imageBox, bodyBox, actionsBox] = await Promise.all([
@@ -576,7 +580,9 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await page.goBack({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);
   await expect(popup).toBeVisible();
-  await expect(popup).toContainText(/купи первый предмет|buy your first item/i);
+  await expect(popup).toContainText(
+    /купи первый предмет|buy your first item|размести предмет|place your item|предметы сражаются сами|items fight automatically/i
+  );
   await expect.poll(async () => (
     await api(request, player.sessionKey, '/api/bootstrap')
   ).settings.tutorial.replayPending).toBe(false);

@@ -447,11 +447,31 @@ const App = {
       if (errorDismissTimer) { clearTimeout(errorDismissTimer); errorDismissTimer = null; }
       if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
     });
+    async function emitPrepTutorial() {
+      if (state.screen !== 'prep' || !state.gameRun) return;
+      const getArtifact = (entry) => {
+        if (entry?.family) return entry;
+        return gs.getArtifact(entry?.artifactId || entry?.id || entry);
+      };
+      const events = createPrepTutorialEvents({
+        shopItems: state.gameRunShopOffer,
+        inventoryItems: state.containerItems,
+        placedItems: state.builderItems.filter((entry) => (
+          state.freshPurchases.includes(entry.artifactId)
+        )),
+        getArtifact,
+        imageForArtifact: artifactBitmapPath
+      });
+      for (const event of events) await tutorial.emit(event);
+    }
+
     watch(
       () => state.bootstrap?.player?.id || '',
-      (playerId, previousPlayerId) => {
+      async (playerId, previousPlayerId) => {
         if (playerId && playerId !== previousPlayerId) {
           tutorial.reset(state.bootstrap?.settings?.tutorial);
+          await nextTick();
+          await emitPrepTutorial();
         }
       },
       { immediate: true }
@@ -465,19 +485,7 @@ const App = {
         state.containerItems.length,
         state.activeBags.length
       ],
-      async () => {
-        if (state.screen !== 'prep' || !state.gameRun) return;
-        const getArtifact = (entry) => {
-          if (entry?.family) return entry;
-          return gs.getArtifact(entry?.artifactId || entry?.id || entry);
-        };
-        const events = createPrepTutorialEvents({
-          shopItems: state.gameRunShopOffer,
-          inventoryItems: [...state.builderItems, ...state.containerItems, ...state.activeBags],
-          getArtifact
-        });
-        for (const event of events) await tutorial.emit(event);
-      },
+      emitPrepTutorial,
       { immediate: true }
     );
     let languageSaveTimer = null;
