@@ -6,7 +6,7 @@ import { ArtifactCatalogBrowser } from '../../web/src/components/ArtifactCatalog
 import { FighterCard } from '../../web/src/components/FighterCard.js';
 import { BackpackZone } from '../../web/src/components/prep/BackpackZone.js';
 import { FusionReveal } from '../../web/src/components/prep/FusionReveal.js';
-import { InventoryZone } from '../../web/src/components/prep/InventoryZone.js';
+import { StorageZone } from '../../web/src/components/prep/StorageZone.js';
 import { PrepActions } from '../../web/src/components/prep/PrepActions.js';
 import { RunHud } from '../../web/src/components/prep/RunHud.js';
 import { SellZone } from '../../web/src/components/prep/SellZone.js';
@@ -40,7 +40,7 @@ test('[artifact-grid] preview methods share canonical core orientation rules', (
   const verticalItem = { id: 'static_spore_sac', family: 'stun', width: 1, height: 2 };
 
   assert.deepEqual(HomeSocialSidebar.methods.previewOrientation(artifact), { width: 1, height: 4 });
-  assert.deepEqual(BackpackZone.methods.previewOrientation(verticalItem), { width: 1, height: 2 });
+  assert.deepEqual(StorageZone.methods.previewOrientation(verticalItem), { width: 1, height: 2 });
   assert.deepEqual(FusionAnimationLabScreen.methods.previewOrientation(verticalItem), { width: 1, height: 2 });
   assert.deepEqual(ShopZone.methods.previewOrientation.call({
     getArtifact: () => verticalItem
@@ -61,12 +61,12 @@ test('[artifact-grid] fighter card keeps the Mushroom compatibility prop over co
   assert.equal(FighterCard.props.gridColumns.default, 6);
 });
 
-test('[artifact-grid] backpack zone keeps Mushroom compatibility over core', () => {
-  const labels = BackpackZone.computed.labels.call({
+test('[artifact-grid] storage zone keeps Mushroom compatibility over core', () => {
+  const labels = StorageZone.computed.labels.call({
     t: {
-      container: 'Container',
+      storage: 'Storage',
       bagSlots: 'slots',
-      containerHint: 'Drag here',
+      storageHint: 'Buy an artifact',
       fusionPendingHint: 'Pending fusion',
       fusionCandidateHint: 'Can fuse',
       recipes: 'Recipes'
@@ -75,26 +75,26 @@ test('[artifact-grid] backpack zone keeps Mushroom compatibility over core', () 
   const emitted = [];
 
   assert.deepEqual(labels, {
-    title: 'Container',
+    title: 'Storage',
     bagSlots: 'slots',
-    empty: 'Drag here',
+    empty: 'Buy an artifact',
     pendingTitle: 'Pending fusion',
     highlightedTitle: 'Can fuse'
   });
-  assert.equal(BackpackZone.methods.artifactName.call({
+  assert.equal(StorageZone.methods.artifactName.call({
     state: { lang: 'en' }
   }, { id: 'spore_needle', name: { en: 'Needle' } }), 'Needle');
-  BackpackZone.methods.onSelectItem.call({
+  StorageZone.methods.onSelectItem.call({
     $emit: (event, payload) => emitted.push([event, payload])
   }, { artifactId: 'spore_needle', id: 'row_1' });
   assert.deepEqual(emitted, [['auto-place', { artifactId: 'spore_needle', id: 'row_1' }]]);
-  assert.deepEqual(BackpackZone.emits, ['auto-place', 'container-dragover', 'container-drop']);
-  assert.match(BackpackZone.template, /CoreBackpackZone/);
-  assert.match(BackpackZone.template, /#visual="\{ item, orientation, previewItem \}"/);
-  assert.match(BackpackZone.template, /<artifact-grid-board/);
+  assert.deepEqual(StorageZone.emits, ['auto-place', 'container-dragover', 'container-drop']);
+  assert.match(StorageZone.template, /CoreStorageZone/);
+  assert.match(StorageZone.template, /#visual="\{ item, orientation, previewItem \}"/);
+  assert.match(StorageZone.template, /<artifact-grid-board/);
 });
 
-test('[artifact-grid] inventory zone keeps Mushroom compatibility over core', () => {
+test('[artifact-grid] backpack zone keeps Mushroom compatibility over core', () => {
   const catalog = new Map([
     ['starter_bag', { id: 'starter_bag', width: 3, height: 3, name: { en: 'Starter' }, color: '#999' }],
     ['wide_bag', { id: 'wide_bag', width: 4, height: 1, name: { en: 'Wide Bag' }, color: '#abc' }],
@@ -112,7 +112,7 @@ test('[artifact-grid] inventory zone keeps Mushroom compatibility over core', ()
     t: { bagDragHint: 'Move bag' },
     getArtifact: (id) => catalog.get(id)
   };
-  const chips = InventoryZone.computed.activeContainerChips.call(context);
+  const chips = BackpackZone.computed.activeContainerChips.call(context);
   const emitted = [];
 
   assert.equal(chips.length, 2);
@@ -127,18 +127,19 @@ test('[artifact-grid] inventory zone keeps Mushroom compatibility over core', ()
     rotatable: true
   });
   assert.equal(chips[1].rotatable, false);
-  assert.deepEqual(InventoryZone.computed.labels(), {
+  assert.deepEqual(BackpackZone.computed.labels.call({ t: { backpack: 'Backpack' } }), {
+    title: 'Backpack',
     rotateAction: '\u21BB',
     removeAction: '\u2715',
     statSummaryAriaLabel: 'Artifact stat summary'
   });
-  InventoryZone.methods.onContainerDragStart.call({
+  BackpackZone.methods.onContainerDragStart.call({
     $emit: (event, payload) => emitted.push([event, payload])
   }, { id: 'wide_row', event: { type: 'dragstart' } });
-  InventoryZone.methods.onRotateContainer.call({
+  BackpackZone.methods.onRotateContainer.call({
     $emit: (event, payload) => emitted.push([event, payload])
   }, { id: 'wide_row', artifactId: 'wide_bag' });
-  InventoryZone.methods.onDeactivateContainer.call({
+  BackpackZone.methods.onDeactivateContainer.call({
     $emit: (event, payload) => emitted.push([event, payload])
   }, { id: 'wide_row', artifactId: 'wide_bag' });
   assert.deepEqual(emitted, [
@@ -146,15 +147,15 @@ test('[artifact-grid] inventory zone keeps Mushroom compatibility over core', ()
     ['rotate-bag', { id: 'wide_row', artifactId: 'wide_bag' }],
     ['deactivate-bag', { id: 'wide_row', artifactId: 'wide_bag' }]
   ]);
-  assert.deepEqual(InventoryZone.emits, [
+  assert.deepEqual(BackpackZone.emits, [
     'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
     'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
   ]);
-  assert.match(InventoryZone.template, /CoreInventoryZone/);
-  assert.match(InventoryZone.template, /#grid="/);
-  assert.match(InventoryZone.template, /<artifact-grid-board/);
-  assert.match(InventoryZone.template, /#footer="\{ totals, ariaLabel \}"/);
-  assert.match(InventoryZone.template, /<artifact-stat-summary/);
+  assert.match(BackpackZone.template, /CoreBackpackZone/);
+  assert.match(BackpackZone.template, /#grid="/);
+  assert.match(BackpackZone.template, /<artifact-grid-board/);
+  assert.match(BackpackZone.template, /#footer="\{ totals, ariaLabel \}"/);
+  assert.match(BackpackZone.template, /<artifact-stat-summary/);
 });
 
 test('[artifact-grid] prep HUD and sell zone keep Mushroom compatibility over core', () => {

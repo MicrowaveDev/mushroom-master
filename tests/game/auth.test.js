@@ -138,7 +138,7 @@ test('shared profile runtime drives Mushroom login, bootstrap, and character sel
     versionSeen: 1,
     disabled: false,
     replayPending: true,
-    seenStepIds: ['build_backpack']
+    seenStepIds: ['buy_first_item']
   });
 
   const selected = await profileRuntimeService.setActiveCharacter(login.user.id, 'thalla');

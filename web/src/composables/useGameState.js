@@ -50,7 +50,7 @@ export function useGameState(state, options = {}) {
   // artifact catalogue id), plus a stable `instanceKey` for Vue's v-for.
   // PrepScreen passes `{ rowId, artifactId }` back as the sell/unplace
   // target so downstream composables can disambiguate duplicates.
-  const containerArtifacts = computed(() =>
+  const storageItems = computed(() =>
     state.containerItems
       .map((slot, idx) => {
         const artifact = getArtifact(slot.artifactId);
@@ -458,7 +458,7 @@ export function useGameState(state, options = {}) {
   return {
     t, isLocalLabEnabled, isLocalDevAuthEnabled,
     activeMushroom, builderTotals, usedCoins, remainingCoins,
-    shopArtifacts, containerArtifacts,
+    shopArtifacts, storageItems,
     fusionMatches, fusionIngredientRowIds,
     fusionAvailableMatches, fusionCandidateRowIds, fusionCandidateShopArtifactIds, hasFusionCandidates,
     maxCoins: MAX_ARTIFACT_COINS,

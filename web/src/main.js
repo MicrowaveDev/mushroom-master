@@ -815,7 +815,7 @@ const App = {
         </section>
 
         <prep-screen v-else-if="state.screen === 'prep' && state.gameRun"
-          :state="state" :t="t" :container-artifacts="containerArtifacts" :builder-totals="builderTotals"
+          :state="state" :t="t" :storage-items="storageItems" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus" :preferred-orientation="preferredOrientation"
           :get-artifact-price="getArtifactPrice" :effective-rows="effectiveRows()" :placement-preview-at="placementPreviewAt"

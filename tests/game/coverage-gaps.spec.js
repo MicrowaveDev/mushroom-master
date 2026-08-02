@@ -514,6 +514,9 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
+  await expect(page.locator('[data-tutorial-anchor="storage"]')).toContainText(/хранилище|storage/i);
+  await expect(page.locator('[data-tutorial-anchor="backpack"]')).toContainText(/рюкзак|backpack/i);
+
   const popup = page.getByTestId('tutorial-popup');
   await expect(popup).toBeVisible();
   await expect(popup).toContainText(/купи первый предмет|buy your first item/i);
@@ -557,12 +560,12 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
     imageBox.y + imageBox.height,
     bodyBox.y + bodyBox.height
   ));
-  const backpackItem = page.locator('[data-tutorial-anchor="backpack-item"]').first();
-  await expect(backpackItem).toBeVisible();
-  await backpackItem.click();
+  const storageItem = page.locator('[data-tutorial-anchor="storage-item"]').first();
+  await expect(storageItem).toBeVisible();
+  await storageItem.click();
   await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
   await expect(popup).toContainText(/ещё один предмет|another item/i);
-  const battleGrid = page.locator('[data-tutorial-anchor="battle-grid"]');
+  const battleGrid = page.locator('[data-tutorial-anchor="backpack"]');
   const shop = page.locator('[data-tutorial-anchor="shop"]');
   await expect(battleGrid).toBeVisible();
   await expect(shop).toBeVisible();

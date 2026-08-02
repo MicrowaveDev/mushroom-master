@@ -1,59 +1,127 @@
-import { artifactPreviewOrientation } from '@microwavedev/backpack-game-core/client-view-model';
 import { BackpackZone as CoreBackpackZone } from '@microwavedev/backpack-game-core/vue/components';
 import { ArtifactGridBoard } from '../ArtifactGridBoard.js';
+import { ArtifactStatSummary } from '../ArtifactStatSummary.js';
 
 export const BackpackZone = {
   name: 'BackpackZone',
-  components: { ArtifactGridBoard, CoreBackpackZone },
+  components: { ArtifactGridBoard, ArtifactStatSummary, CoreBackpackZone },
   props: [
-    'state', 't', 'containerArtifacts', 'getArtifact', 'formatArtifactBonus',
-    'preferredOrientation', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
+    'state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact',
+    'placementPreviewAt', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
   ],
-  emits: ['auto-place', 'container-dragover', 'container-drop'],
+  emits: [
+    'unplace', 'rotate', 'cell-drop', 'inventory-drag-start', 'drag-end',
+    'deactivate-bag', 'rotate-bag', 'bag-chip-drag-start'
+  ],
   computed: {
+    activeContainerChips() {
+      return (this.state.activeBags || [])
+        .filter((bag) => bag.artifactId !== 'starter_bag')
+        .map((bag) => {
+          const artifact = this.getArtifact(bag.artifactId) || {};
+          return {
+            id: bag.id,
+            artifactId: bag.artifactId,
+            name: artifact?.name?.[this.state.lang] || artifact?.name?.en || bag.artifactId,
+            color: artifact?.color || '#888',
+            draggable: true,
+            locked: false,
+            title: this.t?.bagDragHint || 'Drag to move',
+            rotatable: artifact?.width !== artifact?.height
+          };
+        });
+    },
     labels() {
       return {
-        title: this.t?.container,
-        bagSlots: this.t?.bagSlots,
-        empty: this.t?.containerHint,
-        pendingTitle: this.t?.fusionPendingHint || 'Will fuse after this round',
-        highlightedTitle: this.t?.fusionCandidateHint || this.t?.recipes || 'Can fuse by recipe'
+        title: this.t?.backpack,
+        rotateAction: '\u21BB',
+        removeAction: '\u2715',
+        statSummaryAriaLabel: 'Artifact stat summary'
       };
     }
   },
   methods: {
-    previewOrientation(artifact) {
-      return artifactPreviewOrientation(artifact);
+    onContainerDragStart(payload) {
+      this.$emit('bag-chip-drag-start', {
+        bagId: payload.id,
+        event: payload.event
+      });
     },
-    artifactName(artifact) {
-      return artifact?.name?.[this.state.lang] || artifact?.name?.en || artifact?.id || '';
+    onRotateContainer(payload) {
+      this.$emit('rotate-bag', {
+        id: payload.id,
+        artifactId: payload.artifactId
+      });
     },
-    onSelectItem(event) {
-      this.$emit('auto-place', { artifactId: event.artifactId, id: event.id });
+    onDeactivateContainer(payload) {
+      this.$emit('deactivate-bag', {
+        id: payload.id,
+        artifactId: payload.artifactId
+      });
     }
   },
   template: `
     <CoreBackpackZone
-      :items="containerArtifacts"
+      :items="state.builderItems"
+      :active-containers="activeContainerChips"
+      :totals="builderTotals"
+      :total-rows="totalRows"
+      :bag-rows="bagRows"
+      :placement-preview-at="placementPreviewAt"
+      :highlighted-row-ids="fusionCandidateRowIds"
+      :highlighted-title="t.fusionCandidateHint"
       :labels="labels"
-      :lang="state.lang"
-      :name-for-item="artifactName"
-      :format-item-stats="formatArtifactBonus"
-      :preview-orientation-for-item="previewOrientation"
-      :pending-item-ids="fusionIngredientRowIds"
-      :highlighted-item-ids="fusionCandidateRowIds"
-      @select-item="onSelectItem"
-      @container-dragover="$emit('container-dragover', $event)"
-      @container-drop="$emit('container-drop', $event)"
+      @remove-item="$emit('unplace', $event)"
+      @rotate-item="$emit('rotate', $event)"
+      @cell-drop="$emit('cell-drop', $event)"
+      @item-drag-start="$emit('inventory-drag-start', $event)"
+      @item-drag-end="$emit('drag-end')"
+      @container-chip-drag-start="onContainerDragStart"
+      @rotate-container="onRotateContainer"
+      @deactivate-container="onDeactivateContainer"
     >
-      <template #visual="{ item, orientation, previewItem }">
+      <template
+        #grid="{
+          gridClass,
+          totalRows,
+          items,
+          bagRows,
+          placementPreviewAt,
+          highlightedRowIds,
+          highlightedTitle,
+          onRemoveItem,
+          onRotateItem,
+          onCellDrop,
+          onItemDragStart,
+          onItemDragEnd
+        }"
+      >
         <artifact-grid-board
-          class="container-item-visual"
-          variant="catalog"
-          :columns="orientation.width"
-          :rows="orientation.height"
-          :items="previewItem"
+          variant="inventory"
+          :class="gridClass"
+          :total-rows="totalRows"
+          :items="items"
+          :bag-rows="bagRows"
           :get-artifact="getArtifact"
+          :clickable-pieces="true"
+          :rotatable-pieces="true"
+          :droppable="true"
+          :draggable-pieces="true"
+          :placement-preview-for-cell="placementPreviewAt"
+          :highlighted-row-ids="highlightedRowIds"
+          :highlighted-title="highlightedTitle"
+          @piece-click="onRemoveItem"
+          @piece-rotate="onRotateItem"
+          @cell-drop="onCellDrop"
+          @piece-drag-start="onItemDragStart"
+          @piece-drag-end="onItemDragEnd"
+        />
+      </template>
+      <template #footer="{ totals, ariaLabel }">
+        <artifact-stat-summary
+          :totals="totals"
+          :lang="state.lang"
+          :aria-label="ariaLabel"
         />
       </template>
     </CoreBackpackZone>

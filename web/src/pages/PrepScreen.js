@@ -2,8 +2,8 @@ import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
 import { shapePrepScreenViewState } from '@microwavedev/backpack-game-core/client-view-model';
 import { PrepScreen as CorePrepScreen } from '@microwavedev/backpack-game-core/vue/components';
 import { RunHud } from '../components/prep/RunHud.js';
+import { StorageZone } from '../components/prep/StorageZone.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';
-import { InventoryZone } from '../components/prep/InventoryZone.js';
 import { ShopZone } from '../components/prep/ShopZone.js';
 import { PrepActions } from '../components/prep/PrepActions.js';
 import { FusionReveal } from '../components/prep/FusionReveal.js';
@@ -11,7 +11,7 @@ import { FusionReveal } from '../components/prep/FusionReveal.js';
 export const PrepScreen = {
   name: 'PrepScreen',
   props: [
-    'state', 't', 'containerArtifacts', 'builderTotals',
+    'state', 't', 'storageItems', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'formatArtifactBonus',
     'preferredOrientation', 'getArtifactPrice', 'effectiveRows', 'placementPreviewAt',
     'fusionIngredientRowIds', 'fusionCandidateRowIds', 'fusionCandidateShopArtifactIds'
@@ -28,8 +28,8 @@ export const PrepScreen = {
   components: {
     CorePrepScreen,
     RunHud,
+    StorageZone,
     BackpackZone,
-    InventoryZone,
     ShopZone,
     PrepActions,
     FusionReveal
@@ -70,10 +70,10 @@ export const PrepScreen = {
       </template>
 
       <template #loadout>
-        <backpack-zone
+        <storage-zone
           :state="state"
           :t="t"
-          :container-artifacts="containerArtifacts"
+          :storage-items="storageItems"
           :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus"
           :preferred-orientation="preferredOrientation"
@@ -84,7 +84,7 @@ export const PrepScreen = {
           @container-drop="$emit('container-drop', $event)"
         />
 
-        <inventory-zone
+        <backpack-zone
           :state="state"
           :t="t"
           :builder-totals="builderTotals"
