@@ -16,9 +16,15 @@ export async function resetDevDb(request) {
 }
 
 export async function createSession(request, payload) {
-  const response = await request.post('/api/dev/session', { data: payload });
+  const { tutorialEnabled = false, ...sessionPayload } = payload;
+  const response = await request.post('/api/dev/session', { data: sessionPayload });
   const json = await response.json();
   if (!json.success) throw new Error(`dev session failed: ${JSON.stringify(json)}`);
+  if (!tutorialEnabled) {
+    await api(request, json.data.sessionKey, '/api/settings', 'POST', {
+      tutorial: { versionSeen: 1, disabled: true, replayPending: false, seenStepIds: [] }
+    });
+  }
   return json.data;
 }
 

@@ -500,6 +500,49 @@ test('replay rewards stat-grid resolves to display:grid (not stacked vertical li
 
 // --- Flow G: Settings ---
 
+test('[Flow G] first-run tutorial can be skipped and replayed once from settings', async ({ page, request, baseURL }) => {
+  await resetDevDb(request);
+  const player = await createSession(request, {
+    telegramId: 1039,
+    username: 'tutorial_tester',
+    name: 'Tutorial Tester',
+    tutorialEnabled: true
+  });
+  await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+  await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
+  await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await page.locator('.home-start-btn').click();
+  await waitForPrepReady(page);
+
+  const popup = page.getByTestId('tutorial-popup');
+  await expect(popup).toBeVisible();
+  await expect(popup).toContainText(/рюкзак|backpack/i);
+  await popup.locator('.tutorial-popup-skip').click();
+  await expect(popup).toBeHidden();
+
+  await expect.poll(async () => (
+    await api(request, player.sessionKey, '/api/bootstrap')
+  ).settings.tutorial.disabled).toBe(true);
+
+  await page.goto(`${baseURL}/settings`, { waitUntil: 'networkidle' });
+  const tutorialToggle = page.locator('.settings-panel input[type="checkbox"]').first();
+  await tutorialToggle.check();
+  await page.getByRole('button', { name: /save|сохранить/i }).click();
+  await expect.poll(async () => (
+    await api(request, player.sessionKey, '/api/bootstrap')
+  ).settings.tutorial.replayPending).toBe(true);
+
+  await page.goBack({ waitUntil: 'networkidle' });
+  await waitForPrepReady(page);
+  await expect(popup).toBeVisible();
+  await expect(popup).toContainText(/рюкзак|backpack/i);
+  await expect.poll(async () => (
+    await api(request, player.sessionKey, '/api/bootstrap')
+  ).settings.tutorial.replayPending).toBe(false);
+  await popup.locator('.tutorial-popup-skip').click();
+  await expect(popup).toBeHidden();
+});
+
 test('[Flow G] settings: change language and verify persistence', async ({ page, request, baseURL }) => {
   await resetDevDb(request);
   const player = await createSession(request, { telegramId: 1040, username: 'settings_tester', name: 'Settings Tester' });

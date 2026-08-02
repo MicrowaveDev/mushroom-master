@@ -118,6 +118,28 @@ test('shared profile runtime drives Mushroom login, bootstrap, and character sel
 
   const bootstrap = await profileRuntimeService.getBootstrap(login.user.id);
   assert.equal(bootstrap.player.id, login.user.id);
+  assert.deepEqual(bootstrap.settings.tutorial, {
+    versionSeen: 0,
+    disabled: false,
+    replayPending: false,
+    seenStepIds: []
+  });
+
+  const updated = await profileRuntimeService.updateSettings(login.user.id, {
+    tutorial: {
+      versionSeen: 1,
+      disabled: false,
+      replayPending: true,
+      seenStepIds: ['build_backpack']
+    }
+  });
+  assert.equal(updated.settings.lang, 'en');
+  assert.deepEqual(updated.settings.tutorial, {
+    versionSeen: 1,
+    disabled: false,
+    replayPending: true,
+    seenStepIds: ['build_backpack']
+  });
 
   const selected = await profileRuntimeService.setActiveCharacter(login.user.id, 'thalla');
   assert.equal(selected.activeMushroomId, 'thalla');

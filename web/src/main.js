@@ -1,6 +1,6 @@
 import { createApp, reactive, computed, defineAsyncComponent, onMounted, onUnmounted, nextTick, watch } from 'vue/dist/vue.esm-bundler.js';
 import './styles.css';
-import { parseStartParams } from './api.js';
+import { createMushroomGameApiClient, parseStartParams } from './api.js';
 import { getRunAchievementsByIds } from '../../app/shared/run-achievements.js';
 
 // Composables
@@ -18,6 +18,13 @@ import { useTelegramWebApp } from './composables/useTelegramWebApp.js';
 import { createReducedMotionTracker } from './composables/useReducedMotion.js';
 import { GameShell } from '@microwavedev/backpack-game-core/vue/app';
 import { HistoryScreen, SupportAdminScreen } from '@microwavedev/backpack-game-core/vue/pages';
+import { TutorialPopup } from '@microwavedev/backpack-game-core/vue/components';
+import { createTutorialController } from '@microwavedev/backpack-game-core/client/tutorial';
+import {
+  createPrepTutorialEvents,
+  createRoundTutorialEvent
+} from '@microwavedev/backpack-game-core/modules/tutorial';
+import { MAX_ROUNDS_PER_RUN } from './constants.js';
 
 // Page components
 // Legacy single-battle screens (ArtifactsScreen, BattlePrepScreen, ResultsScreen)
@@ -54,7 +61,7 @@ const App = {
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
     FriendsScreen, LeaderboardScreen, HistoryScreen, WikiScreen, WikiDetailScreen, RecipesScreen,
-    FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen, SupportAdminScreen
+    FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen, SupportAdminScreen, TutorialPopup
   },
   setup() {
     const startParams = parseStartParams();
@@ -134,6 +141,17 @@ const App = {
       actionInFlight: false,
       opponentReady: false,
       sseConnected: true
+    });
+    const tutorial = createTutorialController({
+      state: reactive({}),
+      getLocale: () => state.lang,
+      persistPreferences: async (preferences) => {
+        if (!state.sessionKey) return;
+        await createMushroomGameApiClient(state.sessionKey).postRoute('settings', {}, {
+          tutorial: preferences
+        });
+        if (state.bootstrap?.settings) state.bootstrap.settings.tutorial = preferences;
+      }
     });
 
     // --- Composables ---
@@ -366,6 +384,13 @@ const App = {
 
     async function onReplayFinish() {
       if (state.gameRun) {
+        await tutorial.emit(createRoundTutorialEvent({
+          outcome: state.currentBattle?.outcome || state.gameRunRounds.at(-1)?.outcome || '',
+          player: state.gameRun.player || {},
+          maxRounds: MAX_ROUNDS_PER_RUN,
+          runEnded: state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned',
+          endReason: state.gameRun.endReason || ''
+        }));
         if (state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned') {
           gs.goTo('runComplete', { gameRunId: state.gameRunResult?.id || state.gameRun.id });
         } else if (state.gameRunResult) {
@@ -391,6 +416,39 @@ const App = {
       if (errorDismissTimer) { clearTimeout(errorDismissTimer); errorDismissTimer = null; }
       if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
     });
+    watch(
+      () => state.bootstrap?.player?.id || '',
+      (playerId, previousPlayerId) => {
+        if (playerId && playerId !== previousPlayerId) {
+          tutorial.reset(state.bootstrap?.settings?.tutorial);
+        }
+      },
+      { immediate: true }
+    );
+    watch(
+      () => [
+        state.screen,
+        state.gameRun?.id || '',
+        ...(state.gameRunShopOffer || []).map((entry) => entry.artifactId || entry.id || entry),
+        state.builderItems.length,
+        state.containerItems.length,
+        state.activeBags.length
+      ],
+      async () => {
+        if (state.screen !== 'prep' || !state.gameRun) return;
+        const getArtifact = (entry) => {
+          if (entry?.family) return entry;
+          return gs.getArtifact(entry?.artifactId || entry?.id || entry);
+        };
+        const events = createPrepTutorialEvents({
+          shopItems: state.gameRunShopOffer,
+          inventoryItems: [...state.builderItems, ...state.containerItems, ...state.activeBags],
+          getArtifact
+        });
+        for (const event of events) await tutorial.emit(event);
+      },
+      { immediate: true }
+    );
     let languageSaveTimer = null;
     watch(() => state.lang, (lang, oldLang) => {
       if (oldLang === undefined) {
@@ -479,6 +537,11 @@ const App = {
       motionTracker.destroy();
     });
 
+    async function saveSettings() {
+      await auth.saveSettings();
+      tutorial.reset(state.bootstrap?.settings?.tutorial);
+    }
+
     return {
       state, ...gs, ...shop, ...gameRun, ...replay, ...social,
       shellScreenRegistry,
@@ -488,6 +551,7 @@ const App = {
       setShellLocale,
       setShellMenuOpen,
       refreshBootstrap: auth.refreshBootstrap,
+      tutorial,
       loginViaTelegram: auth.loginViaTelegram,
       loginViaBrowserCode: auth.loginViaBrowserCode,
       loginViaDevSession: auth.loginViaDevSession,
@@ -502,7 +566,7 @@ const App = {
       closeGameSidebarPanel,
       gameActivityGroups,
       ...customization,
-      saveSettings: auth.saveSettings,
+      saveSettings,
       ...devTools, handleRunComplete, handleRunRetry, handleRunSummaryClose, onReplayFinish,
       acceptChallenge: () => social.acceptChallenge(replay.autoplayReplay)
     };
@@ -799,6 +863,12 @@ const App = {
       </template>
 
       <template #overlays>
+      <tutorial-popup
+        :step="tutorial.activeStep"
+        :reduced-motion="Boolean(state.bootstrap?.settings?.reducedMotion)"
+        @dismiss="tutorial.dismissCurrent()"
+        @skip="tutorial.skipAll()"
+      />
       <div
         v-if="state.error"
         class="error app-notification app-notification--error"

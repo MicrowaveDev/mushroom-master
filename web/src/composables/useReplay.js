@@ -93,7 +93,8 @@ export function useReplay(state, goTo, getMushroom) {
       lang: state.bootstrap.settings.lang,
       reducedMotion: state.bootstrap.settings.reducedMotion,
       battleSpeed: state.bootstrap.settings.battleSpeed,
-      replaySpeed: speed
+      replaySpeed: speed,
+      tutorial: state.bootstrap.settings.tutorial
     }).catch(() => {});
   }
 

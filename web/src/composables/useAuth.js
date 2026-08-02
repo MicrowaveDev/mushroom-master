@@ -506,7 +506,8 @@ export function useAuth(state, goTo, telegram = useTelegramWebApp()) {
         lang: state.lang,
         reducedMotion: state.bootstrap.settings.reducedMotion,
         battleSpeed: state.bootstrap.settings.battleSpeed,
-        replaySpeed: state.bootstrap.settings.replaySpeed
+        replaySpeed: state.bootstrap.settings.replaySpeed,
+        tutorial: state.bootstrap.settings.tutorial
       });
       await refreshBootstrap();
     } catch (error) {
