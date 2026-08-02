@@ -562,7 +562,23 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await backpackItem.click();
   await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
   await expect(popup).toContainText(/ещё один предмет|another item/i);
-  await expect(page.locator('[data-tutorial-anchor="battle-grid"]')).toBeVisible();
+  const battleGrid = page.locator('[data-tutorial-anchor="battle-grid"]');
+  const shop = page.locator('[data-tutorial-anchor="shop"]');
+  await expect(battleGrid).toBeVisible();
+  await expect(shop).toBeVisible();
+  await expect(coachmark).toHaveAttribute('data-placement', 'between-vertical');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(coachmark).toHaveAttribute('data-placement', 'between-horizontal');
+  await expect.poll(async () => {
+    const [coachmarkBox, gridBox, shopBox] = await Promise.all([
+      coachmark.boundingBox(),
+      battleGrid.boundingBox(),
+      shop.boundingBox()
+    ]);
+    const boundaryCenter = (gridBox.x + gridBox.width + shopBox.x) / 2;
+    const coachmarkCenter = coachmarkBox.x + coachmarkBox.width / 2;
+    return Math.abs(boundaryCenter - coachmarkCenter);
+  }).toBeLessThanOrEqual(2);
   await expect.poll(async () => popup.locator('.tutorial-popup-skip').evaluate((element) => (
     getComputedStyle(element).backgroundColor
   ))).toBe('rgba(0, 0, 0, 0)');
