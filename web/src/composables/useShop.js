@@ -276,7 +276,7 @@ export function useShop(state, getArtifact, persistRunLoadout, feedback = {}) {
           applyPrepPlan(plan);
           state.error = '';
           haptics.impact('light');
-          return;
+          return true;
         }
       }
     }

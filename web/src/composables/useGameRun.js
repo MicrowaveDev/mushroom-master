@@ -408,10 +408,12 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.containerItems = viewState.containerItems;
       state.freshPurchases = viewState.freshPurchases;
       haptics.impact('light');
+      return true;
 
     } catch (error) {
       state.error = error.message || 'Could not buy item';
       haptics.notify('error');
+      return false;
     }
   }
 

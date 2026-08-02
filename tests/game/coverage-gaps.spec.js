@@ -516,9 +516,9 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
 
   const popup = page.getByTestId('tutorial-popup');
   await expect(popup).toBeVisible();
-  await expect(popup).toContainText(/рюкзак|backpack/i);
+  await expect(popup).toContainText(/купи первый предмет|buy your first item/i);
   const coachmark = popup.locator('.tutorial-popup');
-  const anchor = page.locator('[data-tutorial-anchor="backpack"]');
+  const anchor = page.locator('[data-tutorial-anchor="shop-affordable-artifact"]').first();
   await expect(coachmark).not.toHaveAttribute('aria-modal', 'true');
   const [coachmarkBox, anchorBox] = await Promise.all([
     coachmark.boundingBox(),
@@ -536,6 +536,14 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
     0
   );
   expect(Math.hypot(horizontalGap, verticalGap)).toBeLessThanOrEqual(24);
+
+  await anchor.click();
+  await expect(popup).toContainText(/размести предмет|place your item/i);
+  const backpackItem = page.locator('[data-tutorial-anchor="backpack-item"]').first();
+  await expect(backpackItem).toBeVisible();
+  await backpackItem.click();
+  await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
+  await expect(page.locator('[data-tutorial-anchor="battle-grid"]')).toBeVisible();
   await popup.locator('.tutorial-popup-skip').click();
   await expect(popup).toBeHidden();
 
@@ -554,7 +562,7 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await page.goBack({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);
   await expect(popup).toBeVisible();
-  await expect(popup).toContainText(/рюкзак|backpack/i);
+  await expect(popup).toContainText(/купи первый предмет|buy your first item/i);
   await expect.poll(async () => (
     await api(request, player.sessionKey, '/api/bootstrap')
   ).settings.tutorial.replayPending).toBe(false);

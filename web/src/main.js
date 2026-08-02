@@ -21,6 +21,8 @@ import { HistoryScreen, SupportAdminScreen } from '@microwavedev/backpack-game-c
 import { TutorialPopup } from '@microwavedev/backpack-game-core/vue/components';
 import { createTutorialController } from '@microwavedev/backpack-game-core/client/tutorial';
 import {
+  createArtifactBoughtTutorialEvent,
+  createArtifactPlacedTutorialEvents,
   createPrepTutorialEvents,
   createRoundTutorialEvent
 } from '@microwavedev/backpack-game-core/modules/tutorial';
@@ -202,6 +204,30 @@ const App = {
     const social = useSocial(state, gs.goTo);
     const sse = useSSE(state, gs.goTo, replay.loadReplay);
     const touch = useTouch(state);
+
+    async function buyRunShopItemWithTutorial(artifactId) {
+      const artifact = gs.getArtifact(artifactId);
+      const bought = await gameRun.buyRunShopItem(artifactId);
+      if (bought && artifact?.family !== 'bag') {
+        await tutorial.emit(createArtifactBoughtTutorialEvent({ artifact }));
+      }
+      return bought;
+    }
+
+    async function autoPlaceFromContainerWithTutorial(payload) {
+      const artifactId = payload?.artifactId || payload?.item?.artifactId || payload;
+      const artifact = gs.getArtifact(artifactId);
+      const placed = shop.autoPlaceFromContainer(payload);
+      if (placed && artifact?.family !== 'bag') {
+        const events = createArtifactPlacedTutorialEvents({
+          artifact,
+          shopItems: state.gameRunShopOffer,
+          getArtifact: (entry) => gs.getArtifact(entry?.artifactId || entry?.id || entry)
+        });
+        for (const event of events) await tutorial.emit(event);
+      }
+      return placed;
+    }
 
     // --- Character pick: first-pick auto-starts a game run, re-pick goes home ---
     // Spec: docs/user-flows.md Flow A Step 3. Wrapping auth.saveCharacter here
@@ -544,6 +570,8 @@ const App = {
 
     return {
       state, ...gs, ...shop, ...gameRun, ...replay, ...social,
+      buyRunShopItem: buyRunShopItemWithTutorial,
+      autoPlaceFromContainer: autoPlaceFromContainerWithTutorial,
       shellScreenRegistry,
       shellAuthStatus,
       shellNavigationItems,
