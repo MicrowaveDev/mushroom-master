@@ -520,25 +520,39 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   const coachmark = popup.locator('.tutorial-popup');
   const anchor = page.locator('[data-tutorial-anchor="shop-affordable-artifact"]').first();
   await expect(coachmark).not.toHaveAttribute('aria-modal', 'true');
-  const [coachmarkBox, anchorBox] = await Promise.all([
-    coachmark.boundingBox(),
-    anchor.boundingBox()
-  ]);
-  expect(coachmarkBox?.width).toBeLessThanOrEqual(340);
-  const horizontalGap = Math.max(
-    anchorBox.x - (coachmarkBox.x + coachmarkBox.width),
-    coachmarkBox.x - (anchorBox.x + anchorBox.width),
-    0
-  );
-  const verticalGap = Math.max(
-    anchorBox.y - (coachmarkBox.y + coachmarkBox.height),
-    coachmarkBox.y - (anchorBox.y + anchorBox.height),
-    0
-  );
-  expect(Math.hypot(horizontalGap, verticalGap)).toBeLessThanOrEqual(24);
+  await expect.poll(async () => {
+    const [coachmarkBox, anchorBox] = await Promise.all([
+      coachmark.boundingBox(),
+      anchor.boundingBox()
+    ]);
+    expect(coachmarkBox?.width).toBeLessThanOrEqual(340);
+    const horizontalGap = Math.max(
+      anchorBox.x - (coachmarkBox.x + coachmarkBox.width),
+      coachmarkBox.x - (anchorBox.x + anchorBox.width),
+      0
+    );
+    const verticalGap = Math.max(
+      anchorBox.y - (coachmarkBox.y + coachmarkBox.height),
+      coachmarkBox.y - (anchorBox.y + anchorBox.height),
+      0
+    );
+    return Math.hypot(horizontalGap, verticalGap);
+  }).toBeLessThanOrEqual(24);
 
   await anchor.click();
   await expect(popup).toContainText(/размести предмет|place your item/i);
+  const illustratedCoachmark = popup.locator('.tutorial-popup--with-image');
+  await expect(illustratedCoachmark).toBeVisible();
+  const [imageBox, bodyBox, actionsBox] = await Promise.all([
+    illustratedCoachmark.locator('.tutorial-popup-image').boundingBox(),
+    illustratedCoachmark.locator('.tutorial-popup-body').boundingBox(),
+    illustratedCoachmark.locator('.tutorial-popup-actions').boundingBox()
+  ]);
+  expect(bodyBox.x).toBeGreaterThanOrEqual(imageBox.x + imageBox.width);
+  expect(actionsBox.y).toBeGreaterThanOrEqual(Math.max(
+    imageBox.y + imageBox.height,
+    bodyBox.y + bodyBox.height
+  ));
   const backpackItem = page.locator('[data-tutorial-anchor="backpack-item"]').first();
   await expect(backpackItem).toBeVisible();
   await backpackItem.click();

@@ -27,6 +27,7 @@ import {
   createRoundTutorialEvent
 } from '@microwavedev/backpack-game-core/modules/tutorial';
 import { MAX_ROUNDS_PER_RUN } from './constants.js';
+import { artifactBitmapPath } from './artifacts/render.js';
 
 // Page components
 // Legacy single-battle screens (ArtifactsScreen, BattlePrepScreen, ResultsScreen)
@@ -209,7 +210,10 @@ const App = {
       const artifact = gs.getArtifact(artifactId);
       const bought = await gameRun.buyRunShopItem(artifactId);
       if (bought && artifact?.family !== 'bag') {
-        await tutorial.emit(createArtifactBoughtTutorialEvent({ artifact }));
+        await tutorial.emit(createArtifactBoughtTutorialEvent({
+          artifact,
+          imageForArtifact: artifactBitmapPath
+        }));
       }
       return bought;
     }
@@ -222,7 +226,8 @@ const App = {
         const events = createArtifactPlacedTutorialEvents({
           artifact,
           shopItems: state.gameRunShopOffer,
-          getArtifact: (entry) => gs.getArtifact(entry?.artifactId || entry?.id || entry)
+          getArtifact: (entry) => gs.getArtifact(entry?.artifactId || entry?.id || entry),
+          imageForArtifact: artifactBitmapPath
         });
         for (const event of events) await tutorial.emit(event);
       }
