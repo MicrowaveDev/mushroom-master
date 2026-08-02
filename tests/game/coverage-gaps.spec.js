@@ -517,6 +517,25 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   const popup = page.getByTestId('tutorial-popup');
   await expect(popup).toBeVisible();
   await expect(popup).toContainText(/рюкзак|backpack/i);
+  const coachmark = popup.locator('.tutorial-popup');
+  const anchor = page.locator('[data-tutorial-anchor="backpack"]');
+  await expect(coachmark).not.toHaveAttribute('aria-modal', 'true');
+  const [coachmarkBox, anchorBox] = await Promise.all([
+    coachmark.boundingBox(),
+    anchor.boundingBox()
+  ]);
+  expect(coachmarkBox?.width).toBeLessThanOrEqual(340);
+  const horizontalGap = Math.max(
+    anchorBox.x - (coachmarkBox.x + coachmarkBox.width),
+    coachmarkBox.x - (anchorBox.x + anchorBox.width),
+    0
+  );
+  const verticalGap = Math.max(
+    anchorBox.y - (coachmarkBox.y + coachmarkBox.height),
+    coachmarkBox.y - (anchorBox.y + anchorBox.height),
+    0
+  );
+  expect(Math.hypot(horizontalGap, verticalGap)).toBeLessThanOrEqual(24);
   await popup.locator('.tutorial-popup-skip').click();
   await expect(popup).toBeHidden();
 
