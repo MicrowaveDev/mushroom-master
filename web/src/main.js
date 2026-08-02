@@ -23,6 +23,7 @@ import { createTutorialController } from '@microwavedev/backpack-game-core/clien
 import {
   createArtifactBoughtTutorialEvent,
   createArtifactPlacedTutorialEvents,
+  createBagBoughtTutorialEvent,
   createPrepTutorialEvents,
   createRoundTutorialEvent
 } from '@microwavedev/backpack-game-core/modules/tutorial';
@@ -209,11 +210,23 @@ const App = {
     async function buyRunShopItemWithTutorial(artifactId) {
       const artifact = gs.getArtifact(artifactId);
       const bought = await gameRun.buyRunShopItem(artifactId);
-      if (bought && artifact?.family !== 'bag') {
-        await tutorial.emit(createArtifactBoughtTutorialEvent({
-          artifact,
-          imageForArtifact: artifactBitmapPath
-        }));
+      if (bought && artifact) {
+        if (artifact.family === 'bag') {
+          await tutorial.emit(createBagBoughtTutorialEvent({
+            artifact,
+            imageForArtifact: artifactBitmapPath
+          }));
+        } else {
+          const purchaseCount = state.freshPurchases.filter((id) => (
+            gs.getArtifact(id)?.family !== 'bag'
+          )).length;
+          await tutorial.emit(createArtifactBoughtTutorialEvent({
+            artifact,
+            purchaseCount,
+            coinsRemaining: state.gameRun?.player?.coins || 0,
+            imageForArtifact: artifactBitmapPath
+          }));
+        }
       }
       return bought;
     }
@@ -222,7 +235,7 @@ const App = {
       const artifactId = payload?.artifactId || payload?.item?.artifactId || payload;
       const artifact = gs.getArtifact(artifactId);
       const placed = shop.autoPlaceFromContainer(payload);
-      if (placed && artifact?.family !== 'bag') {
+      if (placed && artifact) {
         const events = createArtifactPlacedTutorialEvents({
           artifact,
           shopItems: state.gameRunShopOffer,
@@ -415,17 +428,18 @@ const App = {
 
     async function onReplayFinish() {
       if (state.gameRun) {
-        await tutorial.emit(createRoundTutorialEvent({
+        const roundTutorialEvent = createRoundTutorialEvent({
           outcome: state.currentBattle?.outcome || state.gameRunRounds.at(-1)?.outcome || '',
           player: state.gameRun.player || {},
           maxRounds: MAX_ROUNDS_PER_RUN,
           runEnded: state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned',
           endReason: state.gameRun.endReason || ''
-        }));
+        });
         if (state.gameRun.status === 'completed' || state.gameRun.status === 'abandoned') {
           gs.goTo('runComplete', { gameRunId: state.gameRunResult?.id || state.gameRun.id });
         } else if (state.gameRunResult) {
           await gameRun.continueToNextRound();
+          await tutorial.emit(roundTutorialEvent);
         } else {
           // Replay loaded standalone (e.g. via URL param) but a game run is active —
           // return to prep instead of the results screen.
@@ -459,6 +473,8 @@ const App = {
         placedItems: state.builderItems.filter((entry) => (
           state.freshPurchases.includes(entry.artifactId)
         )),
+        currentRound: state.gameRun.currentRound || 1,
+        coinsRemaining: state.gameRun.player?.coins || 0,
         getArtifact,
         imageForArtifact: artifactBitmapPath
       });

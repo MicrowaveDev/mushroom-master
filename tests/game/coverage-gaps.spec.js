@@ -561,7 +561,11 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await expect(backpackItem).toBeVisible();
   await backpackItem.click();
   await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
+  await expect(popup).toContainText(/ещё один предмет|another item/i);
   await expect(page.locator('[data-tutorial-anchor="battle-grid"]')).toBeVisible();
+  await expect.poll(async () => popup.locator('.tutorial-popup-skip').evaluate((element) => (
+    getComputedStyle(element).backgroundColor
+  ))).toBe('rgba(0, 0, 0, 0)');
   await popup.locator('.tutorial-popup-skip').click();
   await expect(popup).toBeHidden();
 
