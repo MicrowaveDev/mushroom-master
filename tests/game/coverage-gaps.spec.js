@@ -511,6 +511,26 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
   await page.addInitScript((sessionKey) => localStorage.setItem('sessionKey', sessionKey), player.sessionKey);
   await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+  await expect(page.getByTestId('tutorial-popup')).toContainText(/выбери персонажа|choose a character/i);
+  for (const [name, viewport] of [
+    ['mobile', { width: 375, height: 667 }],
+    ['desktop', { width: 1280, height: 800 }]
+  ]) {
+    await page.setViewportSize(viewport);
+    const homeTip = page.getByTestId('tutorial-popup').locator('.tutorial-popup');
+    await expect(homeTip).toHaveAttribute('data-placement', 'home');
+    const [tip, roster] = await Promise.all([homeTip.boundingBox(), page.locator('.home-roster-panel').boundingBox()]);
+    expect(tip.y + tip.height).toBeLessThanOrEqual(roster.y);
+    await saveShot(page, `tutorial-home-${name}.png`);
+  }
+
+  await page.locator('.menu-toggle').click();
+  await page.locator('.nav-sidebar button[data-screen-id="settings"]').click();
+  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page.getByTestId('tutorial-popup')).toBeHidden();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByTestId('tutorial-popup')).toContainText(/выбери персонажа|choose a character/i);
   await page.locator('.home-start-btn').click();
   await waitForPrepReady(page);
 
@@ -541,7 +561,18 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
     await captureScreenshot(page, screenshotDir, `tutorial-above-shop-${name}.png`);
   }
 
+  await page.goBack();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(popup).toBeHidden();
+  await page.goForward();
+  await waitForPrepReady(page);
+  await expect(popup).toContainText(/купи первый предмет|buy your first item/i);
   await anchor.click();
+  await expect(popup).toContainText(/размести предмет|place your item/i);
+  await page.goBack();
+  await expect(popup).toBeHidden();
+  await page.goForward();
+  await waitForPrepReady(page);
   await expect(popup).toContainText(/размести предмет|place your item/i);
   await page.reload({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);

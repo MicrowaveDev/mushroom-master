@@ -149,6 +149,7 @@ const App = {
     const tutorial = createTutorialController({
       state: reactive({}),
       getLocale: () => state.lang,
+      getScreen: () => state.screen,
       persistPreferences: async (preferences) => {
         if (!state.sessionKey) return;
         await createMushroomGameApiClient(state.sessionKey).postRoute('settings', {}, {
@@ -462,6 +463,10 @@ const App = {
       if (msg) { errorDismissTimer = setTimeout(() => { state.error = ''; }, 5000); }
     });
     async function emitPrepTutorial() {
+      if (state.screen === 'home' && state.bootstrap?.player?.id) {
+        await tutorial.emit({ type: 'home_ready' });
+        return;
+      }
       if (state.screen !== 'prep' || !state.gameRun) return;
       const getArtifact = (entry) => {
         if (entry?.family) return entry;
@@ -921,6 +926,7 @@ const App = {
 
       <template #overlays>
       <tutorial-popup
+        v-if="tutorial.activeStep"
         :step="tutorial.activeStep"
         :reduced-motion="Boolean(state.bootstrap?.settings?.reducedMotion)"
         @dismiss="tutorial.dismissCurrent()"

@@ -726,3 +726,8 @@ Preparation tutorial guidance appears in the right workspace column above the sh
 with a stacked layout on mobile. A warm tinted background, accent border and
 left accent stripe distinguish guidance from gameplay panels. It must reserve space instead of overlapping
 shop cards. Dismiss, skip, purchases and placement continue advancing the tutorial.
+
+First-run Home guidance asks the player to choose a character and start a battle.
+It appears above the roster and completes on entering preparation. Tutorial steps
+are scoped to their screen: leaving preparation hides its guidance without
+marking it seen; browser Back/Forward restores the same unfinished step.
