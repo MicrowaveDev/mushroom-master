@@ -519,8 +519,9 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
     await page.setViewportSize(viewport);
     const homeTip = page.getByTestId('tutorial-popup').locator('.tutorial-popup');
     await expect(homeTip).toHaveAttribute('data-placement', 'home');
+    if (name === 'mobile') await expect(page.locator('.home-bottom-actions')).toBeHidden();
     const [tip, roster] = await Promise.all([homeTip.boundingBox(), page.locator('.home-roster-panel').boundingBox()]);
-    expect(tip.y + tip.height).toBeLessThanOrEqual(roster.y);
+    expect(tip.y).toBeGreaterThanOrEqual(roster.y + roster.height);
     await saveShot(page, `tutorial-home-${name}.png`);
   }
 

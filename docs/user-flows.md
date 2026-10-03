@@ -728,6 +728,10 @@ left accent stripe distinguish guidance from gameplay panels. It must reserve sp
 shop cards. Dismiss, skip, purchases and placement continue advancing the tutorial.
 
 First-run Home guidance asks the player to choose a character and start a battle.
-It appears above the roster and completes on entering preparation. Tutorial steps
+It appears below the roster panel and its Start Game button and completes on entering preparation. Tutorial steps
 are scoped to their screen: leaving preparation hides its guidance without
 marking it seen; browser Back/Forward restores the same unfinished step.
+
+On mobile, floating social shortcuts are hidden while Home tutorial guidance is
+visible so they cannot cover its heading; normal shortcut behavior resumes when
+the guidance is dismissed.
