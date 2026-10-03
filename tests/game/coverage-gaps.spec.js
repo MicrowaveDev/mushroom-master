@@ -523,24 +523,23 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   const coachmark = popup.locator('.tutorial-popup');
   const anchor = page.locator('[data-tutorial-anchor="shop-affordable-artifact"]').first();
   await expect(coachmark).not.toHaveAttribute('aria-modal', 'true');
-  await expect.poll(async () => {
-    const [coachmarkBox, anchorBox] = await Promise.all([
-      coachmark.boundingBox(),
-      anchor.boundingBox()
-    ]);
-    expect(coachmarkBox?.width).toBeLessThanOrEqual(340);
-    const horizontalGap = Math.max(
-      anchorBox.x - (coachmarkBox.x + coachmarkBox.width),
-      coachmarkBox.x - (anchorBox.x + anchorBox.width),
-      0
-    );
-    const verticalGap = Math.max(
-      anchorBox.y - (coachmarkBox.y + coachmarkBox.height),
-      coachmarkBox.y - (anchorBox.y + anchorBox.height),
-      0
-    );
-    return Math.hypot(horizontalGap, verticalGap);
-  }).toBeLessThanOrEqual(24);
+  const shop = page.locator('[data-tutorial-anchor="shop"]');
+  for (const [name, viewport] of [
+    ['mobile', { width: 375, height: 667 }],
+    ['desktop', { width: 1280, height: 800 }]
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(coachmark).toHaveAttribute('data-placement', 'above-shop');
+    await expect.poll(async () => {
+      const [tip, store] = await Promise.all([coachmark.boundingBox(), shop.boundingBox()]);
+      return tip.y + tip.height <= store.y;
+    }).toBe(true);
+    await anchor.scrollIntoViewIfNeeded();
+    await anchor.click({ trial: true });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await assertImagesLoaded(page);
+    await captureScreenshot(page, screenshotDir, `tutorial-above-shop-${name}.png`);
+  }
 
   await anchor.click();
   await expect(popup).toContainText(/размести предмет|place your item/i);
@@ -566,22 +565,11 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
   await expect(popup).toContainText(/ещё один предмет|another item/i);
   const battleGrid = page.locator('[data-tutorial-anchor="backpack"]');
-  const shop = page.locator('[data-tutorial-anchor="shop"]');
   await expect(battleGrid).toBeVisible();
   await expect(shop).toBeVisible();
-  await expect(coachmark).toHaveAttribute('data-placement', 'between-vertical');
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(coachmark).toHaveAttribute('data-placement', 'between-horizontal');
-  await expect.poll(async () => {
-    const [coachmarkBox, gridBox, shopBox] = await Promise.all([
-      coachmark.boundingBox(),
-      battleGrid.boundingBox(),
-      shop.boundingBox()
-    ]);
-    const boundaryCenter = (gridBox.x + gridBox.width + shopBox.x) / 2;
-    const coachmarkCenter = coachmarkBox.x + coachmarkBox.width / 2;
-    return Math.abs(boundaryCenter - coachmarkCenter);
-  }).toBeLessThanOrEqual(2);
+  await expect(coachmark).toHaveAttribute('data-placement', 'above-shop');
+  const [tipBox, shopBox] = await Promise.all([coachmark.boundingBox(), shop.boundingBox()]);
+  expect(tipBox.y + tipBox.height).toBeLessThanOrEqual(shopBox.y);
   await expect.poll(async () => popup.locator('.tutorial-popup-skip').evaluate((element) => (
     getComputedStyle(element).backgroundColor
   ))).toBe('rgba(0, 0, 0, 0)');

@@ -21,7 +21,7 @@ E2E tests must capture screenshots at the **mobile viewport** for each major scr
 |---|---|
 | `home` | Side columns are present: `.friends-panel` and `.leaderboard-panel` visible without scroll |
 | `home-field-preview` | Tile grid has 28 cells; Arena, Journey, and chibi are inside the stage and inside the mobile safe frame on mobile |
-| `prep` | Cohesive two-column workspace: backpack+inventory column and shop column are side-by-side with aligned top edges; HUD is above both columns; Ready button visible without scroll |
+| `prep` | Cohesive two-column workspace: backpack+inventory column and shop column are side-by-side with aligned column top edges (tutorial guidance reserves space above the shop); HUD is above both columns; Ready button visible without scroll |
 | `characters` | All roster cards visible in the grid without scroll |
 | `auth` | All login buttons + language toggle visible without scroll (no button cut off below fold) |
 
@@ -215,7 +215,7 @@ Step 2: Prep Screen (Round N)
     - Top portion of inventory grid (first 1-2 rows)
   Below fold on mobile (scroll required):
     - Full inventory grid, shop items, sell zone, Ready/Abandon buttons
-  Desktop note: HUD above a cohesive two-column workspace; backpack + inventory on the left and shop + sell zone on the right with aligned top edges; Ready button visible without scroll
+  Desktop note: HUD above a cohesive two-column workspace; backpack + inventory on the left and shop + sell zone on the right with aligned column top edges (tutorial guidance reserves space above the shop); Ready button visible without scroll
   Sees:
     - Round HUD: "Раунд N" / "Round N"
     - Stats HUD: Wins W, Lives L, Coins C
@@ -721,3 +721,8 @@ Step 5: Export And Import Fixture
 | ~~`battle`~~ | ~~BattlePrepScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
 | ~~`results`~~ | ~~ResultsScreen.js~~ | **DEPRECATED — no entry points (Flow D)** |
 | ~~`roundResult`~~ | ~~RoundResultScreen.js~~ | **DELETED 2026-04-14 — rewards card now rendered inline on the replay screen** |
+
+Preparation tutorial guidance appears in the right workspace column above the shop,
+with a stacked layout on mobile. A warm tinted background, accent border and
+left accent stripe distinguish guidance from gameplay panels. It must reserve space instead of overlapping
+shop cards. Dismiss, skip, purchases and placement continue advancing the tutorial.
