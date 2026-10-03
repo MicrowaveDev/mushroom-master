@@ -69,6 +69,7 @@ export async function captureScreenshot(page, dir, name, options = {}) {
 
   const manifest = {
     screenshot: name,
+    ...(options.description ? { description: options.description } : {}),
     viewport: diagnostics.viewport,
     headings: diagnostics.headings,
     brokenImages: diagnostics.broken,

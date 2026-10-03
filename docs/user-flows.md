@@ -71,8 +71,19 @@ Step 1: Auth Screen
     - Navbar title "Мицелиум: автобаттлер"
     - Hero heading "Арена грибов ждёт" / "The mushroom arena awaits"
     - Language toggle (RU / EN)
-    - Login buttons (Telegram / browser code / dev)
+    - Telegram login; official Google login when configured in a regular browser
+    - Google login hidden inside Telegram and when disabled
+    - Browser code / dev login only in development
   Action: Click login button
+  Google browser journey:
+    - Google Identity Services redirects to the configured callback.
+    - Valid token and CSRF create a session and return to the game.
+    - New players see onboarding; returning players keep their progress.
+    - Provider-load failure shows a localized error and leaves Telegram available.
+  E2E: google-auth.spec.js (external GIS stub; real session/bootstrap handoff)
+  Google screenshots: .agent/tasks/google-auth/raw/screenshots/google-auth-mobile.png,
+    .agent/tasks/google-auth/raw/screenshots/google-auth-desktop.png (repo-relative;
+    GIS button is stubbed, external Google rendering needs live verification)
 
 Step 2: Onboarding
   Screen: onboarding → OnboardingScreen.js

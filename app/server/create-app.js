@@ -18,8 +18,11 @@ import {
   createSocialRouteGroup,
   createSupportAdminRouteGroup,
   createWalletRouteGroup,
-  createWikiRouteGroup
+  createWikiRouteGroup,
+  validateGoogleIdentityRedirectRequest,
+  createBrowserSessionRedirectHtml
 } from '@microwavedev/backpack-game-core/server';
+import { googleAuthConfig } from './google-auth.js';
 import { runChildProcessSync } from '@microwavedev/backpack-game-core/tooling/runners';
 import {
   authenticateRequest,
@@ -716,6 +719,7 @@ export function mapErrorToStatus(message) {
 }
 
 export async function createApp() {
+  googleAuthConfig(); // Fail startup on an explicitly enabled but invalid Google configuration.
   await getDb();
   ensureDistFreshOrRebuild();
   syncPublicPortraitsToDist();
@@ -778,9 +782,13 @@ export async function createApp() {
   });
 
   app.get('/api/app-config', (_req, res) => {
+    const google = googleAuthConfig();
     res.json({
       success: true,
       data: {
+        googleAuthEnabled: google.enabled,
+        googleClientId: google.clientId,
+        googleLoginUri: google.loginUri,
         localAiLabEnabled: isLocalAiLabEnabled(),
         localDevAuthEnabled: process.env.NODE_ENV !== 'production',
         botUsername: botUsername(),
@@ -789,6 +797,24 @@ export async function createApp() {
       }
     });
   });
+
+  app.post('/api/auth/google/callback', publicAuthRateLimit,
+    express.urlencoded({ extended: false, limit: '16kb' }), async (req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
+      const nonce = crypto.randomBytes(18).toString('base64');
+      res.setHeader('Content-Security-Policy', `default-src 'none'; script-src 'nonce-${nonce}'; base-uri 'none'; frame-ancestors 'none'`);
+      res.setHeader('Referrer-Policy', 'no-referrer');
+      try {
+        const credential = validateGoogleIdentityRedirectRequest({ cookieHeader: req.headers.cookie, body: req.body });
+        const login = await profileRuntimeService.login('google', { credential });
+        res.type('html').send(createBrowserSessionRedirectHtml({
+          appName: 'Mushroom Battles', sessionToken: login.sessionKey,
+          storageKey: 'sessionKey', redirectPath: '/', nonce
+        }));
+      } catch (error) {
+        res.status(error.status || 500).type('html').send('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Google sign-in failed</title><body><p>Не удалось войти через Google. / Google sign-in failed.</p><a href="/">Вернуться в игру / Return to game</a></body></html>');
+      }
+    });
 
   bindBackpackRouteDescriptors(app, [
     createAuthRouteGroup({

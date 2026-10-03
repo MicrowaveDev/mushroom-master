@@ -1,5 +1,6 @@
 import { AuthScreen as CoreAuthScreen } from '@microwavedev/backpack-game-core/vue/pages';
 import { replayPortraitConfig } from '../replay-portrait-config.js';
+import { GoogleIdentityButton } from '@microwavedev/backpack-game-core/vue/components';
 
 const portraits = ['thalla', 'lomie', 'kirt'].map((id) => ({
   id,
@@ -9,10 +10,13 @@ const portraits = ['thalla', 'lomie', 'kirt'].map((id) => ({
 
 export const AuthScreen = {
   name: 'MushroomAuthScreen',
-  components: { CoreAuthScreen },
+  components: { CoreAuthScreen, GoogleIdentityButton },
   props: ['state', 't', 'isLocalDevAuthEnabled'],
   emits: ['login-telegram', 'login-browser', 'login-dev', 'cancel-telegram-code'],
   computed: {
+    googleAuthEnabled() {
+      return Boolean(this.state.appConfig.googleAuthEnabled && this.state.appConfig.googleClientId && !globalThis.Telegram?.WebApp);
+    },
     labels() {
       return {
         productTitle: this.t.title,
@@ -45,12 +49,18 @@ export const AuthScreen = {
     }
   },
   methods: {
+    googleLoginError() {
+      this.state.error = this.state.lang === 'ru'
+        ? 'Не удалось войти через Google. Попробуй ещё раз.'
+        : 'Google sign-in failed. Please try again.';
+    },
     updateLocale(locale) {
       this.state.lang = locale;
     }
   },
   template: `
     <core-auth-screen
+      class="mushroom-auth-screen"
       :portraits="portraits"
       :locale="state.lang"
       :labels="labels"
@@ -63,7 +73,20 @@ export const AuthScreen = {
       @login-browser="$emit('login-browser')"
       @login-dev="$emit('login-dev')"
       @cancel-auth-code="$emit('cancel-telegram-code')"
-    />
+    >
+      <template #identity-provider>
+        <GoogleIdentityButton
+          v-if="googleAuthEnabled"
+          :client-id="state.appConfig.googleClientId"
+          ux-mode="redirect"
+          shape="pill"
+          :login-uri="state.appConfig.googleLoginUri"
+          :locale="state.lang"
+          data-testid="google-sign-in"
+          @error="googleLoginError"
+        />
+      </template>
+    </core-auth-screen>
   `,
   data() {
     return { portraits };

@@ -90,6 +90,7 @@
     "@playwright/test": "^1.58.2",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
+    "google-auth-library": "^10.9.1",
     "marked": "^15.0.6",
     "openai": "^4.104.0",
     "pg": "^8.20.0",

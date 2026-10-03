@@ -98,6 +98,38 @@ The script defaults to proxying nginx to the Node app on `127.0.0.1:3021`. Use `
 
 ## Docker Compose Setup
 
+### Google sign-in
+
+Google sign-in is optional and disabled by default. Set `ENABLE_GOOGLE_AUTH=1`
+and `GOOGLE_CLIENT_ID=<web-client-id>.apps.googleusercontent.com` in the production
+env file. Compose passes both values to the app. Startup rejects enabled Google
+auth without a valid client ID. This GIS ID-token flow does not need a client
+secret; the server verifies signature, audience, issuer and expiry through
+`google-auth-library` and validates the redirect double-submit CSRF token.
+
+In Google Auth Platform, configure a **Web application** OAuth client with:
+
+- Authorized JavaScript origin: `https://mushroombattles.com`
+- Authorized redirect URI: `https://mushroombattles.com/api/auth/google/callback`
+
+If serving login directly on `www`, register its exact origin and callback too,
+or redirect it to the canonical host. The same OAuth client as Meat can be used
+only after adding Mushroom's origin and callback. Google consent/test-user
+settings must allow the intended players.
+
+Run the documented update helper after configuring the env file, then check
+`/api/app-config` for `googleAuthEnabled: true` and the correct callback. Verify
+one real Google login, logout and returning login in a regular browser. Google
+login is intentionally hidden inside Telegram. Without credentials, leave the
+feature disabled; the Telegram flow continues to work.
+
+Google profiles use the verified Google `sub`, never email, in the separate
+`google:<sub>` namespace in the existing legacy `players.telegram_id` field,
+consistent with its existing namespaced browser identities. Sessions use
+provider `google`. This is additive and requires no schema/data migration.
+Neither raw tokens nor email/avatar claims are stored. Google and Telegram
+profiles remain separate; explicit account linking is a later feature.
+
 The repo includes a production Docker Compose setup with one app container and one Postgres container:
 
 ```bash

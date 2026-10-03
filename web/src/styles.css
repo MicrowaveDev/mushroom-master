@@ -1,1 +1,6 @@
 @import '@microwavedev/backpack-game-core/vue/styles.css';
+.mushroom-auth-screen .auth-actions {
+  width: 100%;
+  max-width: 400px;
+  margin-inline: auto;
+}

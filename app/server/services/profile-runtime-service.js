@@ -8,6 +8,7 @@ import {
   loginWithWebSession
 } from '../auth.js';
 import { getBootstrap } from './game-service.js';
+import { loginWithGoogle } from '../google-auth.js';
 import {
   getPlayerState,
   selectActiveMushroom,
@@ -16,6 +17,7 @@ import {
 
 export const profileRuntimeService = createProfileRuntimeService({
   loginProviders: {
+    google: (payload) => loginWithGoogle(payload),
     dev: (payload) => loginWithDevSession(payload),
     telegram: ({ initData, botToken }) => loginWithTelegram(initData, botToken),
     web: (payload) => loginWithWebSession(payload)
