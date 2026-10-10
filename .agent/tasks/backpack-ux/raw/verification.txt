@@ -1,0 +1,7 @@
+Core runtime: c3776d9
+npm run game:test:e2e:54 passed,1 opt-in skipped,0 failed,0 retries (4.1m).
+npm run game:test:663 passed,0 failed (66.7s); before final presentation-only composition, final root gate covers latest source.
+npm run game:build:PASS final source.
+Focused deterministic full-shop + actual pointer/tap journeys:2 passed,0 retries (43.4s).
+Sidebar actual bitmap/glyph/recipe/replay contract passed; fresh desktop/mobile captures inspected.
+Real iOS/Android acceptance:pending user, core AC9.

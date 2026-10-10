@@ -1,0 +1,63 @@
+{
+  "runtimeCore": "c3776d9",
+  "criteria": {
+    "Consumer AC1": {
+      "status": "PASS",
+      "evidence": "Shared select/actions preserve instance IDs; adapter regressions and actual tap/pointer journey pass."
+    },
+    "Consumer AC2": {
+      "status": "PASS",
+      "evidence": "Actual second-cell bag drag saves anchor(3,3); tap selection/placement, starter reason, rejected placement and exact board-origin invariants pass on mobile and desktop."
+    },
+    "Consumer AC3": {
+      "status": "PASS",
+      "evidence": "Strict save waits for confirmation, authoritative rows are projected, failure restores all four buckets; browser reload and sale persistence pass."
+    },
+    "Consumer AC4": {
+      "status": "PASS",
+      "evidence": "Full browser suite passes purchase, sale, occupied-bag refusal, fusion, tutorial and sidebar contracts; full units663 pass."
+    },
+    "Consumer AC5": {
+      "status": "PASS",
+      "evidence": "Inspected fresh375\u00d7667 and1280\u00d7800 captures; controls and shortcuts never overlap cells. Deterministic5-card max-art shop, including four-row vine, preserves art and Ready above fold."
+    }
+  },
+  "verification": {
+    "fullE2E": {
+      "passed": 54,
+      "skipped": 1,
+      "failed": 0,
+      "retries": 0,
+      "skipReason": "Opt-in home-field candidate asset preview; HOME_FIELD_CANDIDATE_PREVIEW not enabled",
+      "duration": "4.1m"
+    },
+    "unit": {
+      "passed": 663,
+      "failed": 0,
+      "durationMs": 66717,
+      "scope": "Final source validated by cross-consumer gate"
+    },
+    "build": "PASS",
+    "focusedFinalFoldAndPointer": {
+      "passed": 2,
+      "failed": 0,
+      "retries": 0
+    },
+    "crossConsumerGate": "PASS on c3776d9; final core commit documentation only"
+  },
+  "visualEvidence": [
+    "raw/backpack-desktop.png",
+    "raw/backpack-mobile.png",
+    "raw/full-shop-desktop.png",
+    "raw/recipes-desktop.png",
+    "raw/recipes-mobile.png",
+    "raw/before-pointer.png",
+    "raw/pointer-preview.png"
+  ],
+  "realDevices": {
+    "status": "PENDING_USER",
+    "canonicalCriterion": "Core AC9",
+    "reason": "User will test actual iOS/Android via shared device acceptance script; Chromium touch emulation is reported separately"
+  },
+  "finalCorePin": "220ebae"
+}

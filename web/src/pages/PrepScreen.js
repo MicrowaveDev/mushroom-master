@@ -1,6 +1,6 @@
 import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
 import { shapePrepScreenViewState } from '@microwavedev/backpack-game-core/client-view-model';
-import { PrepScreen as CorePrepScreen } from '@microwavedev/backpack-game-core/vue/components';
+import { BackpackInteractionControls, PrepScreen as CorePrepScreen } from '@microwavedev/backpack-game-core/vue/components';
 import { RunHud } from '../components/prep/RunHud.js';
 import { StorageZone } from '../components/prep/StorageZone.js';
 import { BackpackZone } from '../components/prep/BackpackZone.js';
@@ -11,11 +11,22 @@ import { FusionReveal } from '../components/prep/FusionReveal.js';
 export const PrepScreen = {
   name: 'PrepScreen',
   props: [
-    'state', 't', 'storageItems', 'builderTotals',
+    'state', 't', 'interaction', 'storageItems', 'builderTotals',
     'renderArtifactFigure', 'getArtifact', 'formatArtifactBonus',
     'preferredOrientation', 'getArtifactPrice', 'effectiveRows', 'placementPreviewAt',
     'fusionIngredientRowIds', 'fusionCandidateRowIds', 'fusionCandidateShopArtifactIds'
   ],
+  data() {
+    return { desktopControls: window.matchMedia('(min-width: 680px)').matches };
+  },
+  mounted() {
+    this.controlsMedia = window.matchMedia('(min-width: 680px)');
+    this.controlsMediaChange = (event) => { this.desktopControls = event.matches; };
+    this.controlsMedia.addEventListener('change', this.controlsMediaChange);
+  },
+  beforeUnmount() {
+    this.controlsMedia?.removeEventListener('change', this.controlsMediaChange);
+  },
   emits: [
     'auto-place', 'container-drag-start', 'drag-end',
     'container-dragover', 'container-drop',
@@ -27,6 +38,7 @@ export const PrepScreen = {
   ],
   components: {
     CorePrepScreen,
+    BackpackInteractionControls,
     RunHud,
     StorageZone,
     BackpackZone,
@@ -59,6 +71,7 @@ export const PrepScreen = {
   },
   template: `
     <core-prep-screen
+      :root-class="['prep-screen', 'mushroom-prep-screen']"
       :ready="!!state.bootstrapReady"
       :round-label="t.round"
       :round-number="state.gameRun.currentRound"
@@ -67,10 +80,12 @@ export const PrepScreen = {
     >
       <template #hud>
         <run-hud :state="state" :t="t" />
+        <backpack-interaction-controls v-if="desktopControls" :interaction="interaction" :labels="t.backpackInteraction" />
       </template>
 
       <template #loadout>
         <storage-zone
+          :interaction="interaction"
           :state="state"
           :t="t"
           :storage-items="storageItems"
@@ -84,7 +99,10 @@ export const PrepScreen = {
           @container-drop="$emit('container-drop', $event)"
         />
 
+        <backpack-interaction-controls v-if="!desktopControls" :interaction="interaction" :labels="t.backpackInteraction" />
+
         <backpack-zone
+          :interaction="interaction"
           :state="state"
           :t="t"
           :builder-totals="builderTotals"

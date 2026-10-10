@@ -57,6 +57,9 @@ export function useGameState(state, options = {}) {
         if (!artifact) return null;
         return {
           ...artifact,
+          width: slot.width ?? artifact.width,
+          height: slot.height ?? artifact.height,
+          rotated: slot.rotated || 0,
           rowId: slot.id || null,
           instanceKey: slot.id || `${slot.artifactId}#${idx}`
         };

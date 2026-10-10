@@ -1,0 +1,21 @@
+{
+  "screenshot": "backpack-desktop.png",
+  "description": "Confirmed moss pouch at (3,3), with grabbed-cell offset preserved; uncovered item drop rejected; selection canceled. Full-width HUD controls, safe left-gutter shortcuts and Ready above fold.",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "scrollHeight": 809,
+    "clientHeight": 800,
+    "scrollY": 0
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

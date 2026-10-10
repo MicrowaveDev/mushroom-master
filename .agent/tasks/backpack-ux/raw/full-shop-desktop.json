@@ -1,0 +1,21 @@
+{
+  "screenshot": "full-shop-desktop.png",
+  "description": "Deterministic five-card offer: four-row Mycelium Vine mask, Trefoil Sack, Birchbark Hook, Root Shell, Burning Cap. Three shop columns preserve full art; controls, board and Ready fit1280×800.",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "scrollHeight": 800,
+    "clientHeight": 800,
+    "scrollY": 0
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

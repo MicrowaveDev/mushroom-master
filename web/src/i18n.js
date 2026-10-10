@@ -1,5 +1,17 @@
 export const messages = {
   ru: {
+    backpackInteraction: {
+      selectHint: 'Выбери предмет, затем клетку. Можно перетащить.',
+      bagMode: 'Переставить сумки',
+      bagModeHint: 'Выбери сумку на поле и укажи новое место.',
+      sell: 'Продать', rotate: 'Повернуть', storage: 'В хранилище', autoPlace: 'Разместить автоматически', cancel: 'Отмена',
+      reasons: {
+        occupied: 'Это место занято.', uncovered: 'Все клетки предмета должны находиться в сумках.',
+        out_of_bounds: 'Предмет выходит за край поля.', bag_contents: 'После перемещения предмет останется вне сумок.',
+        locked: 'Стартовая сумка закреплена.', no_space: 'Нет подходящего свободного места.',
+        save_failed: 'Не удалось сохранить. Попробуй ещё раз.', unknown_item: 'Предмет больше недоступен.'
+      }
+    },
     title: 'Мицелиум: автобаттлер',
     authTitle: 'Арена грибов ждёт',
     authTagline: 'Собери рюкзак артефактов, снаряди гриба и отправь его в бой.',
@@ -344,6 +356,17 @@ export const messages = {
     homeFieldDrawerAchievements: 'Достижения'
   },
   en: {
+    backpackInteraction: {
+      selectHint: 'Select an item, then a cell. You can also drag it.',
+      bagMode: 'Move bags', bagModeHint: 'Select a bag on the board, then its new position.',
+      sell: 'Sell', rotate: 'Rotate', storage: 'To storage', autoPlace: 'Auto place', cancel: 'Cancel',
+      reasons: {
+        occupied: 'This space is occupied.', uncovered: 'Every item cell must be inside a bag.',
+        out_of_bounds: 'The item extends beyond the board.', bag_contents: 'Moving this bag would leave an item uncovered.',
+        locked: 'The starter bag is fixed.', no_space: 'No suitable free space.',
+        save_failed: 'Could not save. Please try again.', unknown_item: 'This item is no longer available.'
+      }
+    },
     title: 'Mushroom Battles',
     authTitle: 'The mushroom arena awaits',
     authTagline: 'Draft artifacts, gear up your mushroom, and send it into battle.',

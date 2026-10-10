@@ -8,7 +8,7 @@ import {
 import { BAG_COLUMNS, BAG_ROWS } from '../constants.js';
 
 export function projectLoadoutItems(loadoutItems, bagArtifactIds, getArtifact) {
-  return projectCoreLoadoutItems(loadoutItems, bagArtifactIds, getArtifact);
+  return projectCoreLoadoutItems(loadoutItems, bagArtifactIds, getArtifact, { preserveOrientation: true });
 }
 
 export function prepareGridProps(loadoutItems, bagArtifactIds, getArtifact, options = {}) {

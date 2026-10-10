@@ -11,14 +11,17 @@ import { useGameRun } from './composables/useGameRun.js';
 import { useReplay } from './composables/useReplay.js';
 import { useSocial } from './composables/useSocial.js';
 import { useSSE } from './composables/useSSE.js';
-import { useTouch } from './composables/useTouch.js';
+import { createBackpackInteractionState } from '@microwavedev/backpack-game-core/vue/composables';
+import { useMushroomBackpackInteraction } from './composables/useBackpackInteraction.js';
 import { useDevTools } from './composables/useDevTools.js';
 import { useCustomization } from './composables/useCustomization.js';
 import { useTelegramWebApp } from './composables/useTelegramWebApp.js';
 import { createReducedMotionTracker } from './composables/useReducedMotion.js';
 import { GameShell } from '@microwavedev/backpack-game-core/vue/app';
 import { HistoryScreen, SupportAdminScreen } from '@microwavedev/backpack-game-core/vue/pages';
-import { TutorialPopup } from '@microwavedev/backpack-game-core/vue/components';
+import { TutorialPopup, HomeSocialSidebar as CoreHomeSocialSidebar } from '@microwavedev/backpack-game-core/vue/components';
+import { artifactFusionRecipes } from '../../app/shared/artifact-fusions.js';
+import { buildFriendInviteLink, shareTelegramText } from './helpers/telegram-links.js';
 import { createTutorialController } from '@microwavedev/backpack-game-core/client/tutorial';
 import {
   createArtifactBoughtTutorialEvent,
@@ -54,6 +57,8 @@ import { SettingsScreen } from './pages/SettingsScreen.js';
 // Existing components
 import { ArtifactGridBoard } from './components/ArtifactGridBoard.js';
 import { FighterCard } from './components/FighterCard.js';
+import { ArtifactStatSummary } from './components/ArtifactStatSummary.js';
+const HomeSocialSidebar = { ...CoreHomeSocialSidebar, components: { ...CoreHomeSocialSidebar.components, ArtifactStatSummary, ArtifactGridBoard } };
 
 const ReplayDuel = defineAsyncComponent(() => import('./components/ReplayDuel.js').then(m => m.ReplayDuel));
 const shellScreenRegistry = Object.freeze({});
@@ -65,7 +70,7 @@ const App = {
     PrepScreen,
     ReplayScreen, RunCompleteScreen, RunSummaryScreen, ProfileScreen,
     FriendsScreen, LeaderboardScreen, HistoryScreen, WikiScreen, WikiDetailScreen, RecipesScreen,
-    FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen, SupportAdminScreen, TutorialPopup
+    FusionAnimationLabScreen, HomeFieldPreviewScreen, SettingsScreen, SupportAdminScreen, TutorialPopup, HomeSocialSidebar
   },
   setup() {
     const startParams = parseStartParams();
@@ -206,7 +211,32 @@ const App = {
     const shop = useShop(state, gs.getArtifact, gameRun.persistRunLoadout, telegram);
     const social = useSocial(state, gs.goTo);
     const sse = useSSE(state, gs.goTo, replay.loadReplay);
-    const touch = useTouch(state);
+    const backpackInteraction = useMushroomBackpackInteraction({
+      state,
+      interactionState: reactive(createBackpackInteractionState()),
+      getArtifact: gs.getArtifact,
+      effectiveRows: shop.effectiveRows,
+      persistRunLoadout: gameRun.persistRunLoadout,
+      onSell: gameRun.sellRunItemAction,
+      async onCommitted({ action, item, previousRows }) {
+        telegram.impact('light');
+        const previous = previousRows.find((row) => row.id === item.id);
+        if (action !== 'place' || !previous || previous.x >= 0) return;
+        const artifact = gs.getArtifact(item.artifactId);
+        if (!artifact) return;
+        const events = createArtifactPlacedTutorialEvents({
+          artifact,
+          shopItems: state.gameRunShopOffer,
+          getArtifact: (entry) => gs.getArtifact(entry?.artifactId || entry?.id || entry),
+          imageForArtifact: artifactBitmapPath
+        });
+        for (const event of events) await tutorial.emit(event);
+      }
+    });
+
+    watch(() => backpackInteraction.state.messageCode, (code) => {
+      if (code) telegram.notify('error');
+    });
 
     async function buyRunShopItemWithTutorial(artifactId) {
       const artifact = gs.getArtifact(artifactId);
@@ -536,6 +566,7 @@ const App = {
       motionTracker.setAppPreference(!!reduced);
     }, { immediate: true });
     watch(() => state.screen, async (screen, oldScreen) => {
+      if (screen !== 'prep') backpackInteraction.cancel();
       if (screen !== oldScreen) {
         await nextTick();
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -565,7 +596,7 @@ const App = {
       auth.applyTelegramTheme();
       // Attach touch handlers to the app root element
       appRootEl = document.getElementById('app');
-      touch.attachTouch(appRootEl);
+      backpackInteraction.attach(appRootEl);
       await auth.refreshBootstrap();
       if (state.gameRun) gameRun.loadRunShopOffer();
       // [Req 12-B] If bootstrap detected a missed round result (combat
@@ -593,7 +624,7 @@ const App = {
       sse.disconnect();
       cleanupTelegram();
       cleanupPopstate();
-      touch.detachTouch(appRootEl);
+      backpackInteraction.detach();
       motionTracker.destroy();
     });
 
@@ -603,7 +634,7 @@ const App = {
     }
 
     return {
-      state, ...gs, ...shop, ...gameRun, ...replay, ...social,
+      state, ...gs, ...shop, ...gameRun, ...replay, ...social, backpackInteraction,
       buyRunShopItem: buyRunShopItemWithTutorial,
       autoPlaceFromContainer: autoPlaceFromContainerWithTutorial,
       shellScreenRegistry,
@@ -622,7 +653,7 @@ const App = {
       saveCharacter,
       completeFusionReveal,
       showGameSocialActions,
-      gameSidebarMode,
+      gameSidebarMode, artifactFusionRecipes, buildFriendInviteLink, shareTelegramText,
       showGameBottomActions,
       openGameSidebarPanel,
       closeGameSidebarPanel,
@@ -674,7 +705,7 @@ const App = {
 
       <template #screen>
       <template v-if="showGameSocialActions()">
-        <div class="home-action-rail game-social-action-rail" :class="{ 'home-action-rail--mobile': gameSidebarMode() === 'side' }">
+        <div v-if="state.screen !== 'prep'" class="home-action-rail game-social-action-rail" :class="{ 'home-action-rail--mobile': gameSidebarMode() === 'side' }">
           <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openGameSidebarPanel('notifications')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
           </button>
@@ -699,6 +730,9 @@ const App = {
           :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus"
           :has-fusion-candidates="hasFusionCandidates"
+          :fusion-recipes="artifactFusionRecipes"
+          :build-invite-link="buildFriendInviteLink"
+          :share-invite-value="shareTelegramText"
           @close="closeGameSidebarPanel"
           @add-friend="addFriend($event)"
           @challenge-friend="challengeFriend($event)"
@@ -708,7 +742,7 @@ const App = {
           @switch-panel="state.gameSidebarPanel = $event"
         />
 
-        <div v-if="gameSidebarMode() === 'menu' && state.menuOpen" class="home-menu-actions game-menu-actions">
+        <div v-if="state.screen !== 'prep' && gameSidebarMode() === 'menu' && state.menuOpen" class="home-menu-actions game-menu-actions">
           <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openGameSidebarPanel('notifications')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
           </button>
@@ -724,10 +758,10 @@ const App = {
         </div>
 
         <nav
-          v-if="gameSidebarMode() !== 'menu'"
+          v-if="state.screen === 'prep' || gameSidebarMode() !== 'menu'"
           class="home-bottom-actions game-bottom-actions"
-          :class="{ 'home-bottom-actions--visible': showGameBottomActions() }"
-          :aria-hidden="!showGameBottomActions()"
+          :class="{ 'home-bottom-actions--visible': showGameBottomActions(), 'game-prep-navigation': state.screen === 'prep' }"
+          :aria-hidden="state.screen !== 'prep' && !showGameBottomActions()"
         >
           <button class="home-action-btn home-action-btn--notifications" :aria-label="t.notifications" @click="openGameSidebarPanel('notifications')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 17H9m10-2-1.2-1.2A2.7 2.7 0 0 1 17 11.9V9a5 5 0 0 0-10 0v2.9c0 .7-.3 1.4-.8 1.9L5 15h14Zm-5.3 3a2 2 0 0 1-3.4 0"/></svg>
@@ -820,7 +854,7 @@ const App = {
         </section>
 
         <prep-screen v-else-if="state.screen === 'prep' && state.gameRun"
-          :state="state" :t="t" :storage-items="storageItems" :builder-totals="builderTotals"
+          :state="state" :t="t" :interaction="backpackInteraction" :storage-items="storageItems" :builder-totals="builderTotals"
           :render-artifact-figure="renderArtifactFigure" :get-artifact="getArtifact"
           :format-artifact-bonus="formatArtifactBonus" :preferred-orientation="preferredOrientation"
           :get-artifact-price="getArtifactPrice" :effective-rows="effectiveRows()" :placement-preview-at="placementPreviewAt"

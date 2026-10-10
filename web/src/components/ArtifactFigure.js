@@ -121,7 +121,8 @@ export const ArtifactFigure = {
   props: {
     artifact: { type: Object, default: null },
     displayWidth: { type: Number, default: 0 },
-    displayHeight: { type: Number, default: 0 }
+    displayHeight: { type: Number, default: 0 },
+    rotation: { type: Number, default: null }
   },
   render() {
     const artifact = this.artifact;
@@ -130,6 +131,7 @@ export const ArtifactFigure = {
     const tile = shapeArtifactTileDisplay(artifact, {
       displayWidth: this.displayWidth,
       displayHeight: this.displayHeight,
+      rotation: this.rotation,
       shapeForArtifact,
       visualForArtifact: artifactVisualClassification,
       imageForArtifact: artifactBitmapPath,

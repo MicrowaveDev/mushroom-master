@@ -6,7 +6,7 @@ export const StorageZone = {
   name: 'StorageZone',
   components: { ArtifactGridBoard, CoreStorageZone },
   props: [
-    'state', 't', 'storageItems', 'getArtifact', 'formatArtifactBonus',
+    'state', 't', 'interaction', 'storageItems', 'getArtifact', 'formatArtifactBonus',
     'preferredOrientation', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
   ],
   emits: ['auto-place', 'container-dragover', 'container-drop'],
@@ -34,6 +34,7 @@ export const StorageZone = {
   },
   template: `
     <CoreStorageZone
+      :interaction="interaction"
       :items="storageItems"
       :labels="labels"
       :lang="state.lang"

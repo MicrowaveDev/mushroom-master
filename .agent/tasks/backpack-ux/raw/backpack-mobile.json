@@ -1,0 +1,21 @@
+{
+  "screenshot": "backpack-mobile.png",
+  "description": "Confirmed moss pouch at (3,3), with grabbed-cell offset preserved; uncovered item drop rejected; selection canceled. Controls before board, inline shortcuts and full scrollable grid.",
+  "viewport": {
+    "width": 375,
+    "height": 667
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 375,
+    "clientWidth": 375,
+    "scrollHeight": 1194,
+    "clientHeight": 667,
+    "scrollY": 0
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

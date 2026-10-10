@@ -6,7 +6,7 @@ export const BackpackZone = {
   name: 'BackpackZone',
   components: { ArtifactGridBoard, ArtifactStatSummary, CoreBackpackZone },
   props: [
-    'state', 't', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact',
+    'state', 't', 'interaction', 'builderTotals', 'totalRows', 'bagRows', 'getArtifact',
     'placementPreviewAt', 'fusionIngredientRowIds', 'fusionCandidateRowIds'
   ],
   emits: [
@@ -62,6 +62,7 @@ export const BackpackZone = {
   },
   template: `
     <CoreBackpackZone
+      :interaction="interaction"
       :items="state.builderItems"
       :active-containers="activeContainerChips"
       :totals="builderTotals"
@@ -98,6 +99,7 @@ export const BackpackZone = {
       >
         <artifact-grid-board
           variant="inventory"
+          :interaction="interaction"
           :class="gridClass"
           :total-rows="totalRows"
           :items="items"
@@ -106,7 +108,7 @@ export const BackpackZone = {
           :clickable-pieces="true"
           :rotatable-pieces="true"
           :droppable="true"
-          :draggable-pieces="true"
+          :draggable-pieces="!interaction"
           :placement-preview-for-cell="placementPreviewAt"
           :highlighted-row-ids="highlightedRowIds"
           :highlighted-title="highlightedTitle"

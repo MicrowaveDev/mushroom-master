@@ -153,6 +153,9 @@ test('[Req 10-C] player already at RATING_FLOOR stays at exactly 100 across many
 
   let result;
   for (let i = 0; i < 9; i++) {
+    // A random win can raise the rating between rounds. Restore this test's
+    // floor precondition before each battle so every sampled loss tests it.
+    await query(`UPDATE players SET rating = $1 WHERE id = $2`, [RATING_FLOOR, playerId]);
     result = await resolveRound(playerId, run.id);
     assert.ok(
       result.lastRound.ratingAfter >= RATING_FLOOR,

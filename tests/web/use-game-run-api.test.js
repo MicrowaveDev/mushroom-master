@@ -325,7 +325,7 @@ test('useGameRun applies shared game-run response patches', async () => {
   }
 
   assert.deepEqual(replayLoads, [{ battleId: 'battle_1', options: { battle: { id: 'battle_1' } } }]);
-  assert.deepEqual(state.containerItems, [{ id: 'row_blade', artifactId: 'blade' }]);
+  assert.deepEqual(state.containerItems, [{ id: 'row_blade', artifactId: 'blade', width: 1, height: 1 }]);
   assert.deepEqual(state.gameRunShopOffer, ['starter_bag']);
   assert.deepEqual(state.fusionRevealQueue, [{ id: 'fusion_1' }]);
   assert.equal(state.bootstrap.activeGameRun.shopOffer[0], 'starter_bag');

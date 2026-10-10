@@ -4,3 +4,56 @@
   max-width: 400px;
   margin-inline: auto;
 }
+
+/* Preparation keeps its product shortcuts in the page flow so every board
+   cell remains reachable while dragging, including short mobile screens. */
+.home-bottom-actions.game-prep-navigation {
+  position: static;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  transition: none;
+}
+.home-bottom-actions.game-prep-navigation .home-action-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+/* A full shop and the board share the desktop fold. Put the public controls
+   across the existing topbar rather than adding height to either column. */
+@media (min-width: 680px) {
+  .mushroom-prep-screen .prep-topbar { flex-wrap: wrap; gap: 6px; }
+  .mushroom-prep-screen .prep-topbar .run-hud-wrap { margin-bottom: 0; }
+  .mushroom-prep-screen .prep-topbar > .backpack-interaction-controls {
+    flex-basis: 100%;
+    margin-block: 0;
+    gap: 6px;
+  }
+  .mushroom-prep-screen .prep-topbar .backpack-interaction-item-actions { display: contents; }
+  .mushroom-prep-screen .prep-topbar .backpack-interaction-guidance { min-height: 1.25em; }
+}
+/* At wide desktop sizes the centered game has a safe gutter wider than the
+   44px shortcut targets. Narrow layouts keep the inline navigation. */
+@media (min-width: 1100px) {
+  .mushroom-prep-screen .artifact-shop-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .home-bottom-actions.game-prep-navigation {
+    position: fixed;
+    left: 0;
+    top: 42%;
+    bottom: auto;
+    display: grid;
+    width: 44px;
+    margin: 0;
+    transform: translateY(-50%);
+  }
+}

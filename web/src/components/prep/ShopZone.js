@@ -25,6 +25,7 @@ export const ShopZone = {
         formatArtifactBonus: this.formatArtifactBonus
       }).map((row) => ({
         ...row,
+        unavailable: row.unavailable || !!this.state.actionInFlight,
         name: this.artifactName(row.artifact),
         description: this.artifactDescription(row.artifact)
       }));
@@ -40,7 +41,7 @@ export const ShopZone = {
       };
     },
     refreshDisabled() {
-      return (this.state.gameRun.player?.coins || 0) < this.runRefreshCost;
+      return !!this.state.actionInFlight || (this.state.gameRun.player?.coins || 0) < this.runRefreshCost;
     },
     sellZone() {
       return {

@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import path from 'path';
+import { repoRoot } from '../../app/shared/repo-root.js';
+import { captureScreenshot, assertImagesLoaded, assertNoHorizontalOverflow } from './screenshot-capture.js';
 import { api, createSession, resetDevDb, waitForPrepReady, MOBILE_VIEWPORT, DESKTOP_VIEWPORT } from './e2e-helpers.js';
 import {
   expectedFusionLabArtifactGridCount,
@@ -184,7 +187,7 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await page.goto(`${baseURL}/prep`, { waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
-  const gameActionRail = page.locator('.game-social-action-rail');
+  const gameActionRail = page.locator('.game-prep-navigation, .game-social-action-rail');
   await expect(gameActionRail).toBeVisible();
   await expect(gameActionRail.locator('.home-action-btn--recipes')).toBeVisible();
   await gameActionRail.locator('.home-action-btn--recipes').click();
@@ -196,12 +199,24 @@ test('[Req 11-F] sidebar recipes are reachable from shop and battle screens', as
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"]')).toBeVisible();
   await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] .artifact-grid-board--catalog')).toBeVisible();
   await expect(page.locator('.home-sidebar-recipe-artifact[data-artifact-id="amber_fang"] [data-artifact-height="2"]')).toBeVisible();
+  const resultBitmap = page.locator('[data-result-artifact-id="portal_cut_sickle"] .home-sidebar-recipe-artifact--result .artifact-figure-bitmap');
+  await expect(resultBitmap).toBeVisible();
+  await expect(resultBitmap).toHaveCSS('background-image', /portal_cut_sickle\.png/);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary')).toBeVisible();
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-inventory-stat-chip')).toHaveCount(3);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-role-glyph--damage')).toBeVisible();
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--positive')).toHaveCount(2);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--negative')).toHaveCount(1);
   await expect(page.locator('[data-result-artifact-id="portal_cut_sickle"] .artifact-stat-summary .artifact-inventory-stat-chip--zero')).toHaveCount(0);
+  for (const [name, viewport] of [['desktop', DESKTOP_VIEWPORT], ['mobile', MOBILE_VIEWPORT]]) {
+    await page.setViewportSize(viewport);
+    await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), `recipes-${name}.png`, {
+      description: 'Recipes sidebar opened from preparation shortcut; shared configured component lists all fusion recipes with localized role glyphs and signed stats.'
+    });
+    await assertImagesLoaded(page);
+    await assertNoHorizontalOverflow(page);
+  }
+  await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.locator('.home-social-close').click();
   await expect(socialSidebar).toHaveCount(0);
 

@@ -283,38 +283,41 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   await page.reload({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);
 
-  // Buy and activate the bag
+  // Purchases select first; explicitly place the bag and its contents.
   await page.locator('.shop-item--bag[data-artifact-id="moss_pouch"]').click();
   const containerBag = page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]');
   await expect(containerBag).toBeVisible({ timeout: 3000 });
   await containerBag.click();
-  await expect(page.locator('.active-bags-bar')).toBeVisible();
+  await page.locator('[data-testid="unified-grid"] [data-cell-x="3"][data-cell-y="0"]').click();
+  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
-  // Buy a regular item and place it in the bag rows
   await page.locator('.prep-screen .shop-item[data-artifact-id="spore_needle"]').click();
   const containerItem = page.locator('.artifact-container-zone .container-item[data-artifact-id="spore_needle"]');
   await expect(containerItem).toBeVisible({ timeout: 3000 });
   await containerItem.click();
+  await page.locator('[data-testid="unified-grid"] [data-cell-x="3"][data-cell-y="0"]').click();
+  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
 
-  // Try to deactivate the bag — should show error and bag stays active
+  const rowsBeforeRefusal = (await api(request, player.sessionKey, '/api/bootstrap')).activeGameRun.loadoutItems;
+  const placedItem = rowsBeforeRefusal.find((row) => row.artifactId === 'spore_needle' && row.x === 3 && row.y === 0);
+  expect(placedItem).toBeTruthy();
+  const bagRow = rowsBeforeRefusal.find((row) => row.artifactId === 'moss_pouch');
+  expect([bagRow.x, bagRow.y, bagRow.active]).toEqual([3, 0, true]);
+
+  // Removing the occupied bag would uncover its item and is rejected inline.
   const bagChip = page.locator('.active-bag-chip').first();
-  const deactivateBtn = bagChip.locator('button').last(); // ✕ button
-  await deactivateBtn.click();
+  await bagChip.locator('button').last().click();
+  await expect(page.getByTestId('backpack-placement-reason')).toHaveText(/uncovered|вне сумок/i);
+  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
-  // Items were auto-placed into bag rows, so deactivation must be blocked
-  // with an error message and the bag must remain active.
-  const hasItemsInBag = await page.locator('.artifact-grid-cell--bag .artifact-grid-piece').count() > 0;
-  if (hasItemsInBag) {
-    const errorNotification = page.getByTestId('error-notification');
-    await expect(errorNotification).toBeVisible({ timeout: 3000 });
-    const box = await errorNotification.boundingBox();
-    const viewport = page.viewportSize();
-    expect(box).not.toBeNull();
-    expect(viewport).not.toBeNull();
-    expect(box.x + box.width).toBeGreaterThan(viewport.width - 420);
-    expect(box.y + box.height).toBeGreaterThan(viewport.height - 220);
-    await expect(page.locator('.active-bags-bar')).toBeVisible();
-  }
+  // Selling that exact bag also exercises the existing server rejection.
+  await page.getByTestId('backpack-sell').click();
+  await expect(page.getByTestId('error-notification')).toBeVisible();
+  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.locator('.active-bag-chip')).toHaveCount(1);
+  const persisted = await api(request, player.sessionKey, '/api/bootstrap');
+  expect(persisted.activeGameRun.loadoutItems).toEqual(rowsBeforeRefusal);
   await expect(page.locator('.prep-screen')).toBeVisible();
 });
 
@@ -594,6 +597,8 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   const storageItem = page.locator('[data-tutorial-anchor="storage-item"]').first();
   await expect(storageItem).toBeVisible();
   await storageItem.click();
+  await expect(popup).toContainText(/размести предмет|place your item/i);
+  await page.getByTestId('backpack-auto-place').click();
   await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
   await expect(popup).toContainText(/ещё один предмет|another item/i);
   const battleGrid = page.locator('[data-tutorial-anchor="backpack"]');

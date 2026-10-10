@@ -1,0 +1,21 @@
+{
+  "screenshot": "pointer-preview.png",
+  "description": "Pointer held from moss pouch second cell4,0 to4,3; valid preview must occupy3,3 and4,3.",
+  "viewport": {
+    "width": 375,
+    "height": 667
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 375,
+    "clientWidth": 375,
+    "scrollHeight": 1194,
+    "clientHeight": 667,
+    "scrollY": 138
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

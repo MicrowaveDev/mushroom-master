@@ -61,7 +61,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       payload.push(withId({
         artifactId: item.artifactId,
         x: item.x, y: item.y,
-        width: item.width, height: item.height
+        width: item.width, height: item.height, rotated: item.rotated || 0
       }, item.id));
     }
 
@@ -71,7 +71,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       if (!artifact || artifact.family === 'bag') continue;
       payload.push(withId({
         artifactId: slot.artifactId, x: -1, y: -1,
-        width: artifact.width, height: artifact.height
+        width: slot.width ?? artifact.width, height: slot.height ?? artifact.height,
+        rotated: slot.rotated || 0
       }, slot.id));
     }
     return payload;
@@ -281,7 +282,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   }
 
   function requestAbandonRun() {
-    if (!state.gameRun) return;
+    if (!state.gameRun || state.actionInFlight) return;
     const player = state.gameRun.player || {};
     const currentPoints = calculateSeasonPoints({
       wins: player.wins || 0,
@@ -300,7 +301,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   }
 
   async function confirmAbandonRun() {
-    if (!state.gameRun) return;
+    if (!state.gameRun || state.actionInFlight) return;
     try {
       state.actionInFlight = true;
       state.error = '';
@@ -325,7 +326,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
   }
 
   async function refreshRunShop() {
-    if (!state.gameRun) return;
+    if (!state.gameRun || state.actionInFlight) return;
+    state.actionInFlight = true;
     try {
       state.error = '';
       const api = gameApi();
@@ -340,6 +342,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     } catch (error) {
       state.error = error.message || 'Not enough coins';
       haptics.notify('error');
+    } finally {
+      state.actionInFlight = false;
     }
   }
 
@@ -354,10 +358,11 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
    * docs/client-row-id-refactor.md.
    */
   async function sellRunItemAction(target) {
-    if (!state.gameRun) return;
+    if (!state.gameRun || state.actionInFlight) return;
     const byInstance = typeof target === 'object' && target !== null;
     const rowId = byInstance ? target.id : null;
     const artifactIdFallback = byInstance ? target.artifactId : target;
+    state.actionInFlight = true;
     try {
       state.error = '';
       const payload = rowId
@@ -378,22 +383,27 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.activeBags = viewState.activeBags;
       state.freshPurchases = viewState.freshPurchases;
       haptics.impact('light');
+      return true;
 
     } catch (error) {
       state.error = error.message || 'Could not sell item';
       haptics.notify('error');
+      return false;
+    } finally {
+      state.actionInFlight = false;
     }
   }
 
   async function buyRunShopItem(artifactId) {
     const artifact = getArtifact(artifactId);
-    if (!artifact || !state.gameRun) return;
+    if (!artifact || !state.gameRun || state.actionInFlight) return;
     const price = getArtifactPrice(artifact);
     if (price > state.gameRun.player.coins) {
       state.error = messages[state.lang].errorNotEnoughCoins;
       haptics.notify('error');
       return;
     }
+    state.actionInFlight = true;
     try {
       state.error = '';
       const data = await gameApi().postRoute('gameRunBuy', { gameRunId: state.gameRun.id }, { artifactId });
@@ -414,6 +424,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.error = error.message || 'Could not buy item';
       haptics.notify('error');
       return false;
+    } finally {
+      state.actionInFlight = false;
     }
   }
 
@@ -454,8 +466,8 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     state.draggingSource = '';
   }
 
-  async function persistRunLoadout() {
-    await enqueueRunLoadoutSave();
+  async function persistRunLoadout({ strict = false } = {}) {
+    return enqueueRunLoadoutSave({ strict });
   }
 
   return {

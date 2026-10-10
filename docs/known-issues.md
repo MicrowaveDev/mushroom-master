@@ -31,3 +31,16 @@ Scope: app-frontend (Vue web game / Mini App) and adjacent visual surfaces. Lore
 - [web/src/styles.css `.replay-result-sheet`](../web/src/styles.css)
 - [web/src/pages/ReplayScreen.js — `.replay-sheet-body` markup](../web/src/pages/ReplayScreen.js)
 - [.agent/workflows/ui-design.md — Cap focused-result panels rule](../.agent/workflows/ui-design.md)
+
+## Prep shortcuts and controls must stay outside Backpack cells
+
+Prep shortcuts preserve notifications, friends, recipes and settings. Narrow
+viewports compose them as the inline `.game-prep-navigation` bar. At widths
+of 1100px and above the centered game leaves a safe gutter for the 44px rail.
+The input journey checks navigation/board rectangles never overlap.
+
+One public shared controller drives the preparation controls. Mobile keeps
+controls before the board. Desktop uses the existing HUD slot for a full-width
+stable action/guidance row; wide desktops show five shop cards in three columns.
+The full-journey fold fixture includes the four-row Mycelium Vine mask and other
+large artifacts. Preserve complete art and the 1280×800 Ready assertion.

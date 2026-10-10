@@ -220,7 +220,7 @@ Step 2: Prep Screen (Round N)
     - Round HUD: "Раунд N" / "Round N"
     - Stats HUD: Wins W, Lives L, Coins C
     - Season-rank stakes line: current run points and projected abandon result
-    - [Req 2-A, 2-F] Unified grid, `BAG_COLUMNS = 6` wide — the base inventory occupies the top-left 3×3 (9 cells) and is always visible; the remaining cells are empty bag area (faint dashed borders, drop targets for bag chips). With no bags activated, 18 cells total render.
+    - [Req 2-A, 2-F] Unified grid, `BAG_COLUMNS = 6` wide — the base inventory occupies the top-left 3×3 (9 cells) and is always visible; the remaining cells are empty bag area (faint dashed borders, drop targets for bag chips). With no extra bags activated, at least 36 cells render.
     - [Req 3-A, 3-B] Round 1: 2 preset items at base-inventory (0,0) and (1,0)
     - Container zone (purchased but unplaced items)
     - [Req 4-D] Shop with 5 items + prices
@@ -235,7 +235,11 @@ Step 2: Prep Screen (Round N)
     - [Req 4-J] Selling same-round item returns full price
     - [Req 4-K] Selling older item returns half price
     - [Req 2-G] Buying and activating a bag runs the 2D first-fit packer: bags land alongside the base inventory in the first free cell (e.g. `(3, 0)` for a 2×1 bag), not below it, and the grid only extends downward when no alongside slot fits.
-    - [Req 2-H] Bag chips in the active-bags bar are draggable to re-anchor the bag in any non-overlapping grid cell; chips lock (greyed + tooltip) when the bag holds items.
+    - Tapping Storage or a placed item selects its exact instance; it does not auto-place or remove it. Tap a destination cell to place, or use the explicit Auto place / Rotate / To storage / Cancel actions.
+    - Pointer drag preserves the grabbed cell, previews the whole footprint, and persists a valid drop immediately. Invalid drops leave the original placement unchanged and explain the conflicting cells.
+    - [Req 2-H] Move bags enables selecting a bag directly on the board. The starter bag is fixed. A bag move is rejected with a reason if it would leave an item cell outside the union of all bags; valid moves preserve coverage and avoid bag overlap. Bag chips remain an alternative selection control.
+    - A single item may span adjacent bags when every footprint cell is covered and empty.
+    - Placement, rotation and removal persist across reload; failed saves roll back the client position.
     - signalReady() called → POST /api/game-run/:id/ready
     - Navigate to replay screen (automatic)
 

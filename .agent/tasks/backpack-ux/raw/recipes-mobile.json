@@ -1,0 +1,22 @@
+{
+  "screenshot": "recipes-mobile.png",
+  "description": "Recipes sidebar opened from preparation shortcut; shared configured component lists all fusion recipes with localized role glyphs and signed stats.",
+  "viewport": {
+    "width": 375,
+    "height": 667
+  },
+  "headings": [
+    "Рецепты и Артефакты",
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 375,
+    "clientWidth": 375,
+    "scrollHeight": 1310,
+    "clientHeight": 667,
+    "scrollY": 0
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

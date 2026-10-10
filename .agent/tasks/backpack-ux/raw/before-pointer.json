@@ -1,0 +1,21 @@
+{
+  "screenshot": "before-pointer.png",
+  "description": "Move bags enabled; empty moss pouch at3,0 before grabbing second cell4,0. Viewport scrolled to show board.",
+  "viewport": {
+    "width": 375,
+    "height": 667
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 375,
+    "clientWidth": 375,
+    "scrollHeight": 1194,
+    "clientHeight": 667,
+    "scrollY": 138
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}
