@@ -260,3 +260,14 @@ They do not own complete argument validation, mutation policy, or follow-up
 checks. Likewise, compatibility wrappers and generated queue helpers are not new
 workflow authorities. Use the npm aliases in this README, except for the four
 explicit deployment shell entry points above.
+
+
+## Social Preview
+
+`npm run game:social-preview` renders a review PNG under `tmp/` through
+`@microwavedev/backpack-game-core/tooling/social-preview`. The game owns copy,
+base art and output paths; core owns the 1200x630 layouts and title styles.
+Use `-- --base PATH --out PATH --layout middle-bottom --style storybook`,
+`-- --all-layouts` or `-- --all-styles` for review variants.
+`-- --production` writes the configured production JPEG.
+The legacy `telegram` style remains an alias for the core `sky` style.
