@@ -1,0 +1,21 @@
+{
+  "screenshot": "drag-bag-desktop.png",
+  "description": "Desktop1280×800: held Moss Pouch art under pointer at4,4, grabbed by its second cell4,3. Snapped cells3,4 and4,4 show the target; Escape cancels without saving.",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "scrollHeight": 809,
+    "clientHeight": 800,
+    "scrollY": 0
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

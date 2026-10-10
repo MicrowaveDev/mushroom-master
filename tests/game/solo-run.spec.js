@@ -826,9 +826,17 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 10 });
-  await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), 'pointer-preview.png', { preserveScroll: true, description: 'Pointer held from moss pouch second cell4,0 to4,3; valid preview must occupy3,3 and4,3.' });
+  const ghost = page.getByTestId('backpack-drag-visual');
+  await expect(ghost).toBeVisible();
+  await expect(ghost.locator('.artifact-figure-bitmap')).toHaveCount(1);
+  await expect(ghost).toHaveCSS('pointer-events', 'none');
+  const visual = await ghost.boundingBox();
+  expect(visual.x + visual.width - 18).toBeCloseTo(to.x + 18, 1);
+  expect(visual.y + 18).toBeCloseTo(to.y + 18, 1);
+  await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), `drag-bag-${page.viewportSize().width < 680 ? 'mobile' : 'desktop'}.png`, { preserveScroll: true, description: 'Moss Pouch art follows pointer grabbed at second cell4,0, now at4,3. Snapped valid target cells3,3 and4,3 remain visible; art overlay does not intercept input.' });
   await expect(grid.locator('.artifact-grid-cell--preview-valid')).toHaveCount(2);
   await page.mouse.up();
+  await expect(ghost).toHaveCount(0);
   await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
   await expect.poll(async () => {
     const saved = (await rows()).find((row) => row.id === bag.id);
@@ -866,6 +874,19 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
       expect(box.height).toBeGreaterThanOrEqual(44);
     }
     if (name === 'desktop') {
+      await page.getByTestId('backpack-bag-mode').click();
+      const grab = await cell(4, 3).boundingBox();
+      const destination = await cell(4, 4).boundingBox();
+      await page.mouse.move(grab.x + 18, grab.y + 18);
+      await page.mouse.down();
+      await page.mouse.move(destination.x + 18, destination.y + 18, { steps: 5 });
+      await expect(page.getByTestId('backpack-drag-visual')).toBeVisible();
+      await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), 'drag-bag-desktop.png', { preserveScroll: true, description: 'Desktop1280×800: held Moss Pouch art under pointer at4,4, grabbed by its second cell4,3. Snapped cells3,4 and4,4 show the target; Escape cancels without saving.' });
+      await page.keyboard.press('Escape');
+      await page.mouse.up();
+      await expect(page.getByTestId('backpack-drag-visual')).toHaveCount(0);
+      expect((await rows()).find((row) => row.id === bag.id)).toMatchObject({ x: 3, y: 3 });
+      await page.getByTestId('backpack-bag-mode').click();
       const ready = await page.locator('.prep-ready-btn').boundingBox();
       expect(ready.y + ready.height).toBeLessThanOrEqual(viewport.height);
       const stableOrigin = await cell(0, 0).boundingBox();

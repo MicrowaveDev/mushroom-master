@@ -28,8 +28,18 @@ test('Mushroom supplies only its remote namespace to the core provider', async (
     const provider = createGeesomeAssetProvider({
       server: 'https://geesome.example',
       apiKey: 'secret',
-      fetchImpl: async (_url, options = {}) => {
-        assert.equal(options.body.get('path'), '/games/mushroom-master/character-assets/web/public/portraits/fighter/default.png');
+      fetchImpl: async (url, options = {}) => {
+        if (url === 'https://geesome.example/.well-known/geesome') {
+          return new Response(JSON.stringify({ apiBaseUrl: 'https://geesome.example/api/v1',
+            gatewayBaseUrl: 'https://geesome.example', capabilities: { assetUpload: true } }),
+          { status: 200, headers: { 'content-type': 'application/json' } });
+        }
+        assert.equal(url, 'https://geesome.example/api/v1/assets');
+        assert.equal(options.headers.Authorization, 'Bearer secret');
+        assert.match(options.headers['Idempotency-Key'], /^asset:[a-f0-9]{64}$/);
+        assert.equal(options.body.get('logicalPath'), 'games/mushroom-master/character-assets/web/public/portraits/fighter/default.png');
+        assert.match(options.body.get('expectedSha256'), /^[a-f0-9]{64}$/);
+        assert.equal(options.body.get('previewPolicy'), 'none');
         return new Response(JSON.stringify({ storageId: 'bafkreimushroomportrait' }), {
           status: 200,
           headers: { 'content-type': 'application/json' }

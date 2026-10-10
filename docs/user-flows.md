@@ -236,7 +236,7 @@ Step 2: Prep Screen (Round N)
     - [Req 4-K] Selling older item returns half price
     - [Req 2-G] Buying and activating a bag runs the 2D first-fit packer: bags land alongside the base inventory in the first free cell (e.g. `(3, 0)` for a 2×1 bag), not below it, and the grid only extends downward when no alongside slot fits.
     - Tapping Storage or a placed item selects its exact instance; it does not auto-place or remove it. Tap a destination cell to place, or use the explicit Auto place / Rotate / To storage / Cancel actions.
-    - Pointer drag preserves the grabbed cell, previews the whole footprint, and persists a valid drop immediately. Invalid drops leave the original placement unchanged and explain the conflicting cells.
+    - Pointer drag shows the artifact or bag artwork under the grabbed point, preserves the grabbed cell, previews the whole footprint, and persists a valid drop immediately. Invalid drops leave the original placement unchanged and explain the conflicting cells.
     - [Req 2-H] Move bags enables selecting a bag directly on the board. The starter bag is fixed. A bag move is rejected with a reason if it would leave an item cell outside the union of all bags; valid moves preserve coverage and avoid bag overlap. Bag chips remain an alternative selection control.
     - A single item may span adjacent bags when every footprint cell is covered and empty.
     - Placement, rotation and removal persist across reload; failed saves roll back the client position.

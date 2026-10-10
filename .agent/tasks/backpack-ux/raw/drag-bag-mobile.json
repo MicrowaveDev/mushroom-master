@@ -1,0 +1,21 @@
+{
+  "screenshot": "drag-bag-mobile.png",
+  "description": "Moss Pouch art follows pointer grabbed at second cell4,0, now at4,3. Snapped valid target cells3,3 and4,3 remain visible; art overlay does not intercept input.",
+  "viewport": {
+    "width": 375,
+    "height": 667
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 375,
+    "clientWidth": 375,
+    "scrollHeight": 1194,
+    "clientHeight": 667,
+    "scrollY": 138
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

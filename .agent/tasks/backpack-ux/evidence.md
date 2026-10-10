@@ -15,3 +15,11 @@ Fresh PNG/JSON proofs under `raw/`: `backpack-desktop`, `backpack-mobile`, `befo
 Final hub `npm run verify:backpack-core` passed: equal runtime pins, core unit/pack, Mushroom build/unit/screens/support-admin E2E, Meat unit/browser/server+local deploy config/build. The last core commit changes docs only.
 
 Chromium touchscreen emulation does not claim real device acceptance. The user will run the canonical iOS/Android device script; core AC9 remains pending that check.
+
+Pointer artwork follow-up (core `be4b280`): both product renderers consume the
+shared teleported ghost. Focused actual pointer journey passed on 375×667 and
+1280×800, verifies the second-cell grab, art visibility/non-interception, drop
+cleanup and Escape without persistence. Fresh inspected `raw/drag-bag-mobile`
+and `raw/drag-bag-desktop` PNG/JSON show held art and the snapped destination.
+
+Final cross-consumer gate on `be4b280` passed: core469/pack, Mushroom663/build/3screens/3support E2E, Meat118/9browser/hosted+local deploy config/build. Focused Mushroom pointer journey passed separately; device verification remains pending.
