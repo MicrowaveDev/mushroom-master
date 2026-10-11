@@ -6,6 +6,7 @@ export const messages = {
       sell: 'Продать', rotate: 'Повернуть', storage: 'В хранилище', autoPlace: 'Разместить автоматически',
       reasons: {
         occupied: 'Это место занято.', uncovered: 'Все клетки предмета должны находиться в сумках.',
+        rotation_placement: 'Повернуто. Выберите «Переместить» и свободную клетку или перетащите сумку.',
         out_of_bounds: 'Предмет выходит за край поля.', bag_contents: 'После перемещения предмет останется вне сумок.',
         locked: 'Стартовая сумка закреплена.', no_space: 'Нет подходящего свободного места.',
         save_failed: 'Не удалось сохранить. Попробуй ещё раз.', unknown_item: 'Предмет больше недоступен.'
@@ -361,6 +362,7 @@ export const messages = {
       sell: 'Sell', rotate: 'Rotate', storage: 'To storage', autoPlace: 'Auto place',
       reasons: {
         occupied: 'This space is occupied.', uncovered: 'Every item cell must be inside a bag.',
+        rotation_placement: 'Rotated. Choose Move, then a free cell, or drag the bag.',
         out_of_bounds: 'The item extends beyond the board.', bag_contents: 'Moving this bag would leave an item uncovered.',
         locked: 'The starter bag is fixed.', no_space: 'No suitable free space.',
         save_failed: 'Could not save. Please try again.', unknown_item: 'This item is no longer available.'
