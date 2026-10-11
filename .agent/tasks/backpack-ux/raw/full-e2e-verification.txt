@@ -14,9 +14,9 @@
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 
 [WebServer] [INEFFECTIVE_DYNAMIC_IMPORT] Warning: vendor/backpack-game-core/src/vue/components/ArtifactGridBoard.js is dynamically imported by vendor/backpack-game-core/src/vue/pages/HomeScreen.js but also statically imported by vendor/backpack-game-core/src/vue/components.js, vendor/backpack-game-core/src/vue/components/HomeSocialSidebar.js, dynamic import will not move module into another chunk.
-[WebServer] 
+[WebServer]
 
-[WebServer] [plugin builtin:vite-reporter] 
+[WebServer] [plugin builtin:vite-reporter]
 [WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
 [WebServer] - Using dynamic import() to code-split the application
 [WebServer] - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
@@ -86,7 +86,7 @@ Running 55 tests using 1 worker
 
 
 [39/55] tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots (retry #1)
-  1) tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots 
+  1) tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots
 
     Error: desktop prep shop and left column should share a top edge
 
@@ -125,6 +125,6 @@ Running 55 tests using 1 worker
 [55/55] tests/game/wallet-purchase-ui.spec.js:263:1 › [Req 14-F] skin picker presents roll-only packs separately from direct-buy skins
 [56/55] (retries) tests/game/wallet-purchase-ui.spec.js:422:1 › [Req 14-F] skin picker shows complete, future, and expired pack states
   1 flaky
-    tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots 
+    tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots
   1 skipped
   53 passed (4.5m)
