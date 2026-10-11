@@ -974,3 +974,74 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
 });
 
 });
+
+for (const [name, viewport] of [['desktop', DESKTOP_VIEWPORT], ['mobile', MOBILE_VIEWPORT]]) {
+  test(`[Req 4-AA, 2-H] shop bag drag ${name}: preview price, buy directly and reload`, async ({ page, request, baseURL }) => {
+    await resetDevDb(request);
+    await page.setViewportSize(viewport);
+    const player = await createSession(request, { telegramId: name === 'desktop' ? 9711 : 9712, username: `shop_drag_${name}` });
+    await api(request, player.sessionKey, '/api/active-character', 'PUT', { mushroomId: 'thalla' });
+    await page.addInitScript(key => localStorage.setItem('sessionKey', key), player.sessionKey);
+    await page.goto(`${baseURL}/home`, { waitUntil: 'networkidle' });
+    await page.locator('.home-start-btn').click();
+    await waitForPrepReady(page);
+    const before = (await api(request, player.sessionKey, '/api/bootstrap')).activeGameRun;
+    await api(request, player.sessionKey, `/api/dev/game-run/${before.id}/force-shop`, 'POST', { artifactIds: ['moss_pouch'] });
+    await page.reload({ waitUntil: 'networkidle' });
+    await waitForPrepReady(page);
+    const grid = page.getByTestId('unified-grid');
+    const target = grid.locator('[data-cell-x="3"][data-cell-y="3"]');
+    const source = page.locator('[data-backpack-shop-id="moss_pouch"] .artifact-grid-board');
+    await source.scrollIntoViewIfNeeded();
+    const start = await source.boundingBox();
+    let touch;
+    if (name === 'mobile') {
+      touch = await page.context().newCDPSession(page);
+      const previousScroll = await page.evaluate(() => window.scrollY);
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: start.x + 5, y: start.y + 5 }] });
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 180, y: 30 }] });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(previousScroll);
+      await expect.poll(async () => { const box = await target.boundingBox(); return box.y >= 100 && box.y + box.height < 630; }).toBe(true);
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 180, y: 330 }] });
+      await expect.poll(() => page.evaluate(() => new Promise(resolve => {
+        const before = window.scrollY;
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve(window.scrollY === before)));
+      }))).toBe(true);
+    } else {
+      await page.mouse.move(start.x + 5, start.y + 5);
+      await page.mouse.down();
+    }
+    const box = await target.boundingBox();
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    if (touch) {
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: point.x - 3, y: point.y - 3 }] });
+      const settled = await target.boundingBox();
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: settled.x + settled.width / 2, y: settled.y + settled.height / 2 }] });
+    } else await page.mouse.move(point.x, point.y, { steps: 6 });
+    await expect(page.getByTestId('backpack-drag-visual')).toBeVisible();
+    const cost = page.getByTestId('backpack-purchase-cost');
+    await expect(cost).toBeVisible();
+    await expect(cost).toContainText('−');
+    const badge = await cost.boundingBox();
+    const currentBox = await target.boundingBox();
+    expect(badge.x + badge.width).toBeCloseTo(currentBox.x + currentBox.width, 0);
+    expect(badge.y).toBeGreaterThanOrEqual(currentBox.y + currentBox.height);
+    expect(Number(await cost.evaluate(el => getComputedStyle(el).zIndex))).toBeGreaterThan(Number(await page.getByTestId('backpack-drag-visual').evaluate(el => getComputedStyle(el).zIndex)));
+    expect(badge.y + badge.height).toBeLessThan(viewport.height);
+    await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), `shop-price-preview-${name}.png`, { preserveScroll: true, fullPage: false,
+      description: `${name}: dragging an unowned shop Moss Pouch onto Backpack3,3 shows its art and a coin debit badge below the target cell right corner. Mobile reaches the board with actual edge autoscroll during held touch.` });
+    if (touch) await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    else await page.mouse.up();
+    await expect(page.getByTestId('backpack-drag-visual')).toHaveCount(0);
+    await expect(page.getByTestId('backpack-purchase-cost')).toHaveCount(0);
+    await expect.poll(async () => (await api(request, player.sessionKey, '/api/bootstrap')).activeGameRun.loadoutItems.find(row => row.artifactId === 'moss_pouch')?.x).toBe(3);
+    await expect(target).toHaveClass(/artifact-grid-cell--bag(?!-)/);
+    await expect(page.locator('.container-item[data-artifact-id="moss_pouch"]')).toHaveCount(0);
+    const after = (await api(request, player.sessionKey, '/api/bootstrap')).activeGameRun;
+    expect(after.player.coins).toBeLessThan(before.player.coins);
+    expect(after.loadoutItems.find(row => row.artifactId === 'moss_pouch')).toMatchObject({ x: 3, y: 3, active: true });
+    await page.reload({ waitUntil: 'networkidle' });
+    await waitForPrepReady(page);
+    expect((await api(request, player.sessionKey, '/api/bootstrap')).activeGameRun.loadoutItems.find(row => row.artifactId === 'moss_pouch')).toMatchObject({ x: 3, y: 3, active: true });
+  });
+}

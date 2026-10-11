@@ -1,3 +1,5 @@
+import { shapeShopItemRows } from '@microwavedev/backpack-game-core/client-view-model';
+import { getArtifactPrice } from '../artifacts/grid.js';
 import { getBackpackLoadoutRevision, getBackpackItemDimensions } from '@microwavedev/backpack-game-core/modules/loadout';
 import { createBackpackInteraction } from '@microwavedev/backpack-game-core/vue/composables';
 import { projectLoadoutItems } from './loadout-projection.js';
@@ -27,11 +29,13 @@ export function mushroomBackpackRows(state, getArtifact) {
 }
 
 export function useMushroomBackpackInteraction({ state, interactionState, getArtifact,
-  effectiveRows, persistRunLoadout, onCommitted, onSell, getSellPrice, onConflict }) {
+  effectiveRows, persistRunLoadout, onCommitted, onSell, getSellPrice, onConflict, onPurchase }) {
   return createBackpackInteraction({
     state: interactionState,
     getRows: () => mushroomBackpackRows(state, getArtifact),
     getArtifact,
+    getShopRows: () => shapeShopItemRows({ offer: state.gameRunShopOffer, getArtifact, getArtifactPrice, availableBudget: state.gameRun?.player?.coins || 0 }),
+    onPurchase,
     getSellPrice,
     columns: BAG_COLUMNS,
     getHeight: effectiveRows,

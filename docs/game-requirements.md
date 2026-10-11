@@ -108,6 +108,8 @@ Membership is not stored. It is derived from overlap between item cells and acti
 - **4-V.** General lore artifacts may appear in normal shop rolls without character gating. Their names, localized `description`, and `loreSource` should point at established world concepts, locations, or factions, and production-ready lore artifacts should have dedicated bitmap art under `web/public/artifacts/{artifact_id}.png`.
 - **4-W.** Fusion-only artifacts are excluded from normal shop rolls and ghost shop-purchase pools. They are created only by artifact fusion recipes during round transition.
 
+- **4-AA.** Dragging an affordable shop artifact or bag onto a valid Backpack position purchases and places it atomically. The target preview shows the coin cost. Invalid, canceled, stale or unaffordable drops spend nothing and retain the offer; click purchase still places the item in Storage.
+
 ### Selling
 
 - **4-J.** Sell an item in the **same round** it was purchased: **full price** refund.

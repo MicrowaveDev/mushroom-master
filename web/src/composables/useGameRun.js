@@ -1,3 +1,5 @@
+import { getBackpackLoadoutRevision } from '@microwavedev/backpack-game-core/modules/loadout';
+import { mushroomBackpackRows } from './useBackpackInteraction.js';
 import { createMushroomGameApiClient } from '../api.js';
 import { getArtifactPrice } from '../artifacts/grid.js';
 import { messages } from '../i18n.js';
@@ -395,7 +397,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     }
   }
 
-  async function buyRunShopItem(artifactId) {
+  async function buyRunShopItem(artifactId, placement = null) {
     const artifact = getArtifact(artifactId);
     if (!artifact || !state.gameRun || state.actionInFlight) return;
     const price = getArtifactPrice(artifact);
@@ -407,7 +409,7 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     state.actionInFlight = true;
     try {
       state.error = '';
-      const data = await gameApi().postRoute('gameRunBuy', { gameRunId: state.gameRun.id }, { artifactId });
+      const data = await gameApi().postRoute('gameRunBuy', { gameRunId: state.gameRun.id }, { artifactId, ...(placement ? { placement, expectedLoadoutRevision: getBackpackLoadoutRevision(mushroomBackpackRows(state, getArtifact).map(row => state.gameRun?.loadoutItems?.find(saved => saved.id === row.id) || row)) } : {}) });
       const viewState = runShopBuyResultViewState(data, {
         run: state.gameRun,
         containerItems: state.containerItems,
@@ -418,6 +420,13 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
       state.gameRunShopOffer = viewState.shopOffer;
       state.containerItems = viewState.containerItems;
       state.freshPurchases = viewState.freshPurchases;
+      if (data.loadoutItems) {
+        state.gameRun.loadoutItems = data.loadoutItems;
+        const bags = new Set(data.loadoutItems.filter(row => getArtifact(row.artifactId)?.family === 'bag').map(row => row.artifactId));
+        const projected = projectLoadoutItems(data.loadoutItems, bags, getArtifact);
+        Object.assign(state, { builderItems: projected.builderItems, activeBags: projected.activeBags,
+          containerItems: projected.containerItems, rotatedBags: projected.rotatedBags });
+      }
       haptics.impact('light');
       return true;
 

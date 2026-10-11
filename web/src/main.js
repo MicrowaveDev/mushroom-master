@@ -218,6 +218,7 @@ const App = {
       effectiveRows: shop.effectiveRows,
       persistRunLoadout: gameRun.persistRunLoadout,
       onSell: gameRun.sellRunItemAction,
+      onPurchase: (row, placement) => buyRunShopItemWithTutorial(row.artifactId, placement),
       getSellPrice: (row) => gameRun.getRunSellPrice(row.artifactId),
       onConflict: gameRun.reloadRunLoadout,
       async onCommitted({ action, item, previousRows }) {
@@ -240,9 +241,9 @@ const App = {
       if (code) telegram.notify('error');
     });
 
-    async function buyRunShopItemWithTutorial(artifactId) {
+    async function buyRunShopItemWithTutorial(artifactId, placement = null) {
       const artifact = gs.getArtifact(artifactId);
-      const bought = await gameRun.buyRunShopItem(artifactId);
+      const bought = await gameRun.buyRunShopItem(artifactId, placement);
       if (bought && artifact) {
         if (artifact.family === 'bag') {
           await tutorial.emit(createBagBoughtTutorialEvent({

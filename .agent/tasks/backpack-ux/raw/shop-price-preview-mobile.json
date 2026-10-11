@@ -1,0 +1,21 @@
+{
+  "screenshot": "shop-price-preview-mobile.png",
+  "description": "mobile: dragging an unowned shop Moss Pouch onto Backpack3,3 shows its art and a coin debit badge below the target cell right corner. Mobile reaches the board with actual edge autoscroll during held touch.",
+  "viewport": {
+    "width": 375,
+    "height": 667
+  },
+  "headings": [
+    "Раунд 1"
+  ],
+  "brokenImages": [],
+  "document": {
+    "scrollWidth": 375,
+    "clientWidth": 375,
+    "scrollHeight": 912,
+    "clientHeight": 667,
+    "scrollY": 200
+  },
+  "overflowX": false,
+  "rawStatusTokens": []
+}

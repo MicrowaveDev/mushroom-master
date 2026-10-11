@@ -1,6 +1,8 @@
 import { createMushroomShopServicePort } from '@microwavedev/backpack-game-core/server/ports/mushroom/gameplay';
 import { withTransaction } from '../db.js';
 import {
+  BAG_COLUMNS,
+  BAG_ROWS,
   BAG_BASE_CHANCE,
   BAG_ESCALATION_STEP,
   BAG_PITY_THRESHOLD,
@@ -32,6 +34,8 @@ import {
 } from './game-run-loadout.js';
 
 const shopServicePort = createMushroomShopServicePort({
+  bagColumns: BAG_COLUMNS,
+  bagRows: BAG_ROWS,
   withTransaction,
   withRunLock,
   bagBaseChance: BAG_BASE_CHANCE,

@@ -1634,7 +1634,7 @@ export async function createApp() {
         res.json({ success: true, data: await runRuntimeService.sellItem(req.user.id, req.params.id, target) });
       }),
       buy: asyncRoute(async (req, res) => {
-        const data = await runRuntimeService.buyItem(req.user.id, req.params.id, req.body.artifactId);
+        const data = await runRuntimeService.buyItem(req.user.id, req.params.id, req.body.artifactId, { placement: req.body.placement, expectedLoadoutRevision: req.body.expectedLoadoutRevision });
         res.json({ success: true, data });
       })
     },

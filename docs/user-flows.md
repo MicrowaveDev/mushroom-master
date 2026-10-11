@@ -228,8 +228,9 @@ Step 2: Prep Screen (Round N)
     - During item drag, a priced sale target appears immediately left of the compact right-aligned run HUD (coins, wins, lives).
     - "Готов" / "Ready" button
     - "Покинуть" / "Abandon" button
-  Action: Buy items from shop, arrange on grid, click "Ready"
+  Action: Buy items from shop (click to Storage, or drag directly to Backpack), arrange on grid, click "Ready"
   Expected:
+    - [Req 4-AA] A shop drag shows art under the grabbed point and a coin debit label below the target cell right corner. A valid drop buys and places in one operation; rejected/canceled drops spend nothing. Holding the finger near a viewport edge scrolls the page during drag; release stops scrolling. Reload preserves the purchased placement.
     - [Req 4-E] Coins deducted per item price on buy
     - [Req 4-F] Shop offer persists across page refresh
     - [Req 4-J] Selling same-round item returns full price
