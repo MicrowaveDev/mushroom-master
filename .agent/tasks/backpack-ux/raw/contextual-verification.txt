@@ -23,7 +23,3 @@
 == Meat local package config check ==
 == Meat production build ==
 Backpack core consumer verification passed for f05461d7ac6a24523dd80e4478b3480d1d6dcefc.
-Full E2E:54 successful (53 first attempt,1 retry),0 failed,1 opt-in skip;4.5m.
-Tall-bag/evacuation/skin regression:3/3,0 retries;20.2s.
-Physical Telegram iOS/Android:AC9/AC23 PENDING_USER.
-Final responsive happy path/input journey:2/2,0 retries;48.9s.

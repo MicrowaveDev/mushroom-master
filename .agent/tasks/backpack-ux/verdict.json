@@ -1,0 +1,22 @@
+{
+  "implementation": "COMPLETE",
+  "automatedAcceptance": "PASS",
+  "criteriaPassed": [
+    "Core AC16",
+    "Core AC17",
+    "Core AC18",
+    "Core AC19",
+    "Core AC20",
+    "Core AC21",
+    "Core AC22"
+  ],
+  "pendingUserAcceptance": [
+    "Core AC9",
+    "Core AC23"
+  ],
+  "runtimeCore": "f05461d",
+  "finalCorePin": "3f77736",
+  "productionDeployment": "Awaiting user merge of core PR10 and Meat PR9",
+  "knownProductFailures": [],
+  "fullSuiteNote": "54 successful with1 retry; final responsive regression2/2 without retries"
+}

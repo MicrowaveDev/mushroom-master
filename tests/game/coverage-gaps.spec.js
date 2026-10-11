@@ -289,7 +289,7 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   await expect(containerBag).toBeVisible({ timeout: 3000 });
   await containerBag.click();
   await page.locator('[data-testid="unified-grid"] [data-cell-x="3"][data-cell-y="0"]').click();
-  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.getByTestId('backpack-more')).toBeHidden();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
   await page.locator('.prep-screen .shop-item[data-artifact-id="spore_needle"]').click();
@@ -297,7 +297,7 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   await expect(containerItem).toBeVisible({ timeout: 3000 });
   await containerItem.click();
   await page.locator('[data-testid="unified-grid"] [data-cell-x="3"][data-cell-y="0"]').click();
-  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.getByTestId('backpack-more')).toBeHidden();
 
   const rowsBeforeRefusal = (await api(request, player.sessionKey, '/api/bootstrap')).activeGameRun.loadoutItems;
   const placedItem = rowsBeforeRefusal.find((row) => row.artifactId === 'spore_needle' && row.x === 3 && row.y === 0);
@@ -307,14 +307,17 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
 
   // Removing the occupied bag would uncover its item and is rejected inline.
   const bagChip = page.locator('.active-bag-chip').first();
-  await bagChip.locator('button').last().click();
+  await bagChip.click();
+  await page.getByTestId('backpack-more').click();
+  await page.getByTestId('backpack-storage').click();
   await expect(page.getByTestId('backpack-placement-reason')).toHaveText(/uncovered|вне сумок/i);
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
   // Selling that exact bag also exercises the existing server rejection.
+  await page.getByTestId('backpack-more').click();
   await page.getByTestId('backpack-sell').click();
   await expect(page.getByTestId('error-notification')).toBeVisible();
-  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.getByTestId('backpack-more')).toBeVisible();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
   const persisted = await api(request, player.sessionKey, '/api/bootstrap');
   expect(persisted.activeGameRun.loadoutItems).toEqual(rowsBeforeRefusal);
@@ -598,6 +601,7 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await expect(storageItem).toBeVisible();
   await storageItem.click();
   await expect(popup).toContainText(/размести предмет|place your item/i);
+  await page.getByTestId('backpack-more').click();
   await page.getByTestId('backpack-auto-place').click();
   await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
   await expect(popup).toContainText(/ещё один предмет|another item/i);

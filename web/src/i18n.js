@@ -1,9 +1,7 @@
 export const messages = {
   ru: {
     backpackInteraction: {
-      selectHint: 'Выбери предмет, затем клетку. Можно перетащить.',
-      bagMode: 'Переставить сумки',
-      bagModeHint: 'Выбери сумку на поле и укажи новое место.',
+      more: 'Действия', bagContentsHint: 'В хранилище перейдут предметы: {count}',
       sell: 'Продать', rotate: 'Повернуть', storage: 'В хранилище', autoPlace: 'Разместить автоматически', cancel: 'Отмена',
       reasons: {
         occupied: 'Это место занято.', uncovered: 'Все клетки предмета должны находиться в сумках.',
@@ -326,7 +324,7 @@ export const messages = {
     characterItem: 'Особый',
     fusionPendingHint: 'Сольётся после этого раунда',
     fusionCandidateHint: 'Можно слить по рецепту',
-    bagDragHint: 'Перетащите, чтобы переместить сумку',
+    bagDragHint: 'Тяни сумку за свободную клетку; её предметы перейдут в хранилище. Нажми название, чтобы выбрать сумку.',
     bagDragBlocked: 'Сначала освободите сумку, чтобы её переместить',
     runOutcomeWin: 'Победа',
     runOutcomeLoss: 'Поражение',
@@ -357,8 +355,7 @@ export const messages = {
   },
   en: {
     backpackInteraction: {
-      selectHint: 'Select an item, then a cell. You can also drag it.',
-      bagMode: 'Move bags', bagModeHint: 'Select a bag on the board, then its new position.',
+      more: 'More actions', bagContentsHint: '{count} items will move to Storage',
       sell: 'Sell', rotate: 'Rotate', storage: 'To storage', autoPlace: 'Auto place', cancel: 'Cancel',
       reasons: {
         occupied: 'This space is occupied.', uncovered: 'Every item cell must be inside a bag.',
@@ -681,7 +678,7 @@ export const messages = {
     characterItem: 'Signature',
     fusionPendingHint: 'Will fuse after this round',
     fusionCandidateHint: 'Can fuse by recipe',
-    bagDragHint: 'Drag to move the bag',
+    bagDragHint: 'Drag an empty bag cell; its items move to Storage. Select the bag label for more actions.',
     bagDragBlocked: 'Empty the bag to move it',
     runOutcomeWin: 'Victory',
     runOutcomeLoss: 'Defeat',

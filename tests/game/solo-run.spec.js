@@ -112,6 +112,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   await page.setViewportSize(DESKTOP_VIEWPORT);
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.locator('.prep-screen .shop-item')).toHaveCount(5);
+  await expect(page.locator('.prep-topbar > [data-testid="backpack-interaction-controls"]')).toHaveCount(1);
   const hudBox = await page.locator('.run-hud').boundingBox();
   const containerBox = await page.locator('.artifact-container-zone').boundingBox();
   const inventoryBox = await page.locator('.artifact-inventory-section').boundingBox();
@@ -123,7 +124,7 @@ test('[Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journe
   expect(shopBox.x, 'desktop prep shop should sit to the right of inventory').toBeGreaterThan(inventoryBox.x + inventoryBox.width);
   expect(readyBox.y + readyBox.height, 'desktop prep Ready button should be visible without scroll').toBeLessThanOrEqual(DESKTOP_VIEWPORT.height);
   await expect(page.getByRole('button', { name: /ready|готов/i })).toBeVisible();
-  await saveShot(page, 'solo-02-prep-round1-desktop.png', 'Preparation at round1 with five large shop cards including four-row Mycelium Vine mask; full-width HUD controls, safe44px left-gutter shortcuts, three shop columns with complete art, and Ready above the1280×800 fold.');
+  await saveShot(page, 'solo-02-prep-round1-desktop.png', 'Preparation at round1 with five large shop cards including four-row Mycelium Vine mask; compact contextual controls before the board, safe44px left-gutter shortcuts, three shop columns with complete art, and Ready above the1280×800 fold.');
   await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), 'full-shop-desktop.png', {
     description: 'Deterministic five-card offer: four-row Mycelium Vine mask, Trefoil Sack, Birchbark Hook, Root Shell, Burning Cap. Three shop columns preserve full art; controls, board and Ready fit1280×800.'
   });
@@ -300,7 +301,8 @@ test('[Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistenc
 
   // Click the bag in container to activate it
   await containerItem.click();
-  await page.getByRole('button', { name: /auto place|разместить автоматически/i }).click();
+  await page.getByTestId('backpack-more').click();
+  await page.getByTestId('backpack-auto-place').click();
 
   // Bag should NOT be in container anymore
   const containerCountAfter = await page.locator('.artifact-container-zone .container-item').count();
@@ -559,7 +561,8 @@ test('items, bags, and sell state all survive page reload', async ({ page, reque
   // --- Part 2: buy moss_pouch, activate, buy amber_satchel (leave in container), reload ---
   await forceShopAndBuy(page, request, player.sessionKey, runId, 'moss_pouch');
   await page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]').click();
-  await page.getByRole('button', { name: /auto place|разместить автоматически/i }).click();
+  await page.getByTestId('backpack-more').click();
+  await page.getByTestId('backpack-auto-place').click();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
   await forceShopAndBuy(page, request, player.sessionKey, runId, 'amber_satchel');
@@ -614,10 +617,12 @@ test('[Req 2-F, 2-G, 2-H] unified grid packs bags alongside the base inventory',
 
   // Activate both bags by clicking their container slots.
   await page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]').first().click();
-  await page.getByRole('button', { name: /auto place|разместить автоматически/i }).click();
+  await page.getByTestId('backpack-more').click();
+  await page.getByTestId('backpack-auto-place').click();
   await expect(page.locator('.active-bag-chip[data-bag-row-id]')).toHaveCount(1);
   await page.locator('.artifact-container-zone .container-item[data-artifact-id="amber_satchel"]').first().click();
-  await page.getByRole('button', { name: /auto place|разместить автоматически/i }).click();
+  await page.getByTestId('backpack-more').click();
+  await page.getByTestId('backpack-auto-place').click();
   await expect(page.locator('.active-bag-chip[data-bag-row-id]')).toHaveCount(2);
 
   // The unified grid renders one block (no separate inventory + bag-zone
@@ -697,7 +702,8 @@ test('[Req 2-F] tetromino-bag mask gaps render visibly (no hidden grid holes)', 
   // starter preset (5 total). Activates at (3, 0) via the first-fit packer.
   await forceShopAndBuy(page, request, player.sessionKey, bootstrap.activeGameRun.id, 'trefoil_sack');
   await page.locator('.artifact-container-zone .container-item[data-artifact-id="trefoil_sack"]').first().click();
-  await page.getByRole('button', { name: /auto place|разместить автоматически/i }).click();
+  await page.getByTestId('backpack-more').click();
+  await page.getByTestId('backpack-auto-place').click();
   await expect(page.locator('.active-bag-chip[data-bag-row-id]')).toHaveCount(1);
 
   const grid = page.locator('[data-testid="unified-grid"]');
@@ -749,14 +755,18 @@ test('backpack tall bag preview does not overlap its caption', async ({ page, re
       const caption = card.querySelector('.container-item-copy strong')?.getBoundingClientRect();
       if (!visual || !caption) return null;
       return {
-        visualBottom: visual.bottom,
-        captionTop: caption.top,
-        gap: caption.top - visual.bottom
+        verticalGap: caption.top - visual.bottom,
+        horizontalGap: caption.left - visual.right,
+        visualFits: visual.left >= card.getBoundingClientRect().left
+          && visual.right <= card.getBoundingClientRect().right
+          && visual.top >= card.getBoundingClientRect().top
+          && visual.bottom <= card.getBoundingClientRect().bottom
       };
     });
 
     expect(geometry).not.toBeNull();
-    expect(geometry.gap, 'tall bag preview should leave visible space before the caption').toBeGreaterThanOrEqual(4);
+    expect(Math.max(geometry.verticalGap, geometry.horizontalGap), 'tall bag art and caption should be separated by at least4px').toBeGreaterThanOrEqual(4);
+    expect(geometry.visualFits, 'full tall bag preview should stay inside its card').toBe(true);
   }
 
   await expectTallBagCaptionClear();
@@ -795,34 +805,34 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
   const originBeforeSelection = await cell(0, 0).boundingBox();
   const itemBox = await grid.locator(`.artifact-piece[data-artifact-id="${item.artifactId}"]`).first().boundingBox();
   await page.touchscreen.tap(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
-  await expect(page.getByTestId('backpack-storage')).toBeEnabled();
+  await expect(page.getByTestId('backpack-more')).toBeEnabled();
   expect(await cell(0, 0).boundingBox()).toEqual(originBeforeSelection);
   expect((await rows()).find((row) => row.id === item.id).x).toBe(0);
   await cell(0, 1).click();
-  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.getByTestId('backpack-more')).toBeHidden();
   await expect.poll(async () => (await rows()).find((row) => row.id === item.id).y).toBe(1);
 
   // A purchased bag is also selected first; its destination is explicit.
   await forceShopAndBuy(page, request, player.sessionKey, runId, 'moss_pouch');
   await page.locator('.container-item[data-artifact-id="moss_pouch"]').click();
-  await expect(page.getByTestId('backpack-auto-place')).toBeVisible();
+  await expect(page.getByTestId('backpack-more')).toBeVisible();
   await expect(page.locator('.container-item[data-artifact-id="moss_pouch"]')).toBeVisible();
   await cell(3, 0).click();
-  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.getByTestId('backpack-more')).toBeHidden();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
   const bag = (await rows()).find((row) => row.artifactId === 'moss_pouch');
 
+  // Put the initial item into the pouch before dragging its free second cell.
+  await grid.locator(`.artifact-piece[data-artifact-id="${item.artifactId}"]`).first().click();
+  await cell(3, 0).click();
+  await expect.poll(async () => (await rows()).find((row) => row.id === item.id).x).toBe(3);
+
   // Move the bag on the board, grabbing its second cell rather than its
   // anchor. Actual pointer events must keep that grabbed-cell offset.
-  await page.getByTestId('backpack-bag-mode').click();
-  await cell(0, 2).click();
-  await expect(page.getByTestId('backpack-placement-reason')).toHaveText(/fixed|закреплена/i);
   await grid.scrollIntoViewIfNeeded();
   await expect.poll(async () => (await cell(4, 0).boundingBox()).height).toBe(36);
   const from = await cell(4, 0).boundingBox();
   const to = await cell(4, 3).boundingBox();
-  console.log('backpack drag geometry', JSON.stringify({ from, to, viewport: page.viewportSize() }));
-  await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), 'before-pointer.png', { preserveScroll: true, description: 'Move bags enabled; empty moss pouch at3,0 before grabbing second cell4,0. Viewport scrolled to show board.' });
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await page.mouse.down();
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 10 });
@@ -837,21 +847,36 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
   await expect(grid.locator('.artifact-grid-cell--preview-valid')).toHaveCount(2);
   await page.mouse.up();
   await expect(ghost).toHaveCount(0);
-  await expect(page.getByTestId('backpack-bag-mode')).toBeEnabled();
+  await expect(page.getByTestId('backpack-more')).toBeHidden();
   await expect.poll(async () => {
     const saved = (await rows()).find((row) => row.id === bag.id);
     return [saved.x, saved.y];
   }).toEqual([3, 3]);
 
-  await page.waitForTimeout(450); // shared controller's post-drag click guard
-  await page.getByTestId('backpack-bag-mode').click();
-  await grid.locator(`.artifact-piece[data-artifact-id="${item.artifactId}"]`).first().click();
+  // A quarter-turn followed by another save validates the canonical revision
+  // across rotated bag dimensions as well as a preceding purchased instance.
+  const bagContext = page.getByTestId('backpack-bag-context').filter({ hasText: /moss|пакет|мох/i });
+  await bagContext.click();
+  await page.getByTestId('backpack-rotate').click();
+  await expect.poll(async () => (await rows()).find((row) => row.id === bag.id).rotated).toBe(1);
+  await bagContext.click();
+  await page.getByTestId('backpack-rotate').click();
+  await expect.poll(async () => (await rows()).find((row) => row.id === bag.id).rotated).toBe(2);
+  await bagContext.click();
+  await page.getByTestId('backpack-rotate').click();
+  await expect.poll(async () => (await rows()).find((row) => row.id === bag.id).rotated).toBe(3);
+  await bagContext.click();
+  await page.getByTestId('backpack-rotate').click();
+  await expect.poll(async () => (await rows()).find((row) => row.id === bag.id).rotated).toBe(0);
+
+  await page.locator(`.container-item[data-backpack-row-id="${item.id}"]`).click();
   await cell(5, 5).scrollIntoViewIfNeeded();
   const originBeforeInvalid = await cell(0, 0).boundingBox();
   await cell(5, 5).click();
   await expect(page.getByTestId('backpack-placement-reason')).not.toHaveText('');
   expect(await cell(0, 0).boundingBox()).toEqual(originBeforeInvalid);
-  expect((await rows()).find((row) => row.id === item.id).y).toBe(1);
+  expect((await rows()).find((row) => row.id === item.id).y).toBe(-1);
+  await page.getByTestId('backpack-more').click();
   await page.getByTestId('backpack-cancel').click();
 
   // Verify accessible controls outside the grid, both current layouts,
@@ -860,10 +885,12 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
     await page.setViewportSize(viewport);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await assertAtTop(page);
+    const controlsParent = name === 'desktop' ? '.prep-topbar' : '.prep-loadout-column';
+    await expect(page.locator(`${controlsParent} > [data-testid="backpack-interaction-controls"]`)).toHaveCount(1);
     const controls = await page.getByTestId('backpack-interaction-controls').boundingBox();
     const board = await grid.boundingBox();
     expect(controls.y + controls.height).toBeLessThanOrEqual(board.y + 1);
-    await expect(page.getByTestId('backpack-bag-mode')).toBeVisible();
+    await expect(page.getByTestId('backpack-bag-mode')).toHaveCount(0);
     const navigation = await page.locator('.game-prep-navigation').boundingBox();
     expect(navigation.y + navigation.height <= board.y || navigation.x + navigation.width <= board.x).toBe(true);
     for (const action of ['notifications', 'friends', 'recipes', 'settings']) {
@@ -874,7 +901,6 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
       expect(box.height).toBeGreaterThanOrEqual(44);
     }
     if (name === 'desktop') {
-      await page.getByTestId('backpack-bag-mode').click();
       const grab = await cell(4, 3).boundingBox();
       const destination = await cell(4, 4).boundingBox();
       await page.mouse.move(grab.x + 18, grab.y + 18);
@@ -886,27 +912,28 @@ test('backpack controls: select, place, move bag by pointer, reject and persist'
       await page.mouse.up();
       await expect(page.getByTestId('backpack-drag-visual')).toHaveCount(0);
       expect((await rows()).find((row) => row.id === bag.id)).toMatchObject({ x: 3, y: 3 });
-      await page.getByTestId('backpack-bag-mode').click();
       const ready = await page.locator('.prep-ready-btn').boundingBox();
       expect(ready.y + ready.height).toBeLessThanOrEqual(viewport.height);
       const stableOrigin = await cell(0, 0).boundingBox();
-      await grid.locator(`.artifact-piece[data-artifact-id="${item.artifactId}"]`).first().click();
+      await page.locator(`.container-item[data-backpack-row-id="${item.id}"]`).click();
       expect(await cell(0, 0).boundingBox()).toEqual(stableOrigin);
       await cell(5, 5).click();
       await expect(page.getByTestId('backpack-placement-reason')).not.toHaveText('');
       expect(await cell(0, 0).boundingBox()).toEqual(stableOrigin);
+      await page.getByTestId('backpack-more').click();
       await page.getByTestId('backpack-cancel').click();
     }
     await expect(grid.locator('.artifact-grid-cell')).toHaveCount(36);
-    await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), `backpack-${name}.png`, { description: `Confirmed moss pouch at (3,3), with grabbed-cell offset preserved; uncovered item drop rejected; selection canceled. ${name === 'desktop' ? 'Full-width HUD controls, safe left-gutter shortcuts and Ready above fold.' : 'Controls before board, inline shortcuts and full scrollable grid.'}` });
+    await captureScreenshot(page, path.join(repoRoot, '.agent/tasks/backpack-ux/raw'), `backpack-${name}.png`, { description: `Confirmed Moss Pouch at3,3; its former contents are in Storage. Invalid item placement was rejected without mutation. ${name === 'desktop' ? 'Idle has no actions toolbar or mode switch; safe left-gutter shortcuts and Ready above fold.' : 'Idle has no actions toolbar; inline shortcuts and full scrollable grid.'}` });
     await assertImagesLoaded(page);
     await assertNoHorizontalOverflow(page);
   }
   await page.reload({ waitUntil: 'networkidle' });
   await waitForPrepReady(page);
   await expect(cell(3, 3)).toHaveClass(/artifact-grid-cell--bag(?!-)/);
-  expect((await rows()).find((row) => row.id === item.id).y).toBe(1);
-  await grid.locator(`.artifact-piece[data-artifact-id="${item.artifactId}"]`).first().click();
+  expect((await rows()).find((row) => row.id === item.id).y).toBe(-1);
+  await page.locator(`.container-item[data-backpack-row-id="${item.id}"]`).click();
+  await page.getByTestId('backpack-more').click();
   await page.getByTestId('backpack-sell').click();
   await expect.poll(async () => (await rows()).some((row) => row.id === item.id)).toBe(false);
   await page.reload({ waitUntil: 'networkidle' });

@@ -1490,7 +1490,7 @@ export async function createApp() {
         req.user.id,
         activeRun.id,
         req.body.items || [],
-        { expectedRound: req.body.roundNumber }
+        { expectedRound: req.body.roundNumber, expectedLoadoutRevision: req.body.loadoutRevision }
       );
       res.json({
         success: true,

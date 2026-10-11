@@ -1,6 +1,6 @@
 {
   "screenshot": "backpack-desktop.png",
-  "description": "Confirmed moss pouch at (3,3), with grabbed-cell offset preserved; uncovered item drop rejected; selection canceled. Full-width HUD controls, safe left-gutter shortcuts and Ready above fold.",
+  "description": "Confirmed Moss Pouch at3,3; its former contents are in Storage. Invalid item placement was rejected without mutation. Idle has no actions toolbar or mode switch; safe left-gutter shortcuts and Ready above fold.",
   "viewport": {
     "width": 1280,
     "height": 800
@@ -12,7 +12,7 @@
   "document": {
     "scrollWidth": 1280,
     "clientWidth": 1280,
-    "scrollHeight": 809,
+    "scrollHeight": 808,
     "clientHeight": 800,
     "scrollY": 0
   },

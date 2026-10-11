@@ -1,63 +1,157 @@
 {
-  "runtimeCore": "c3776d9",
+  "date": "2026-10-11",
+  "runtimeCore": "f05461d",
+  "finalCorePin": "3f77736",
+  "finalCoreChange": "documentation only",
   "criteria": {
-    "Consumer AC1": {
+    "Core AC16": {
       "status": "PASS",
-      "evidence": "Shared select/actions preserve instance IDs; adapter regressions and actual tap/pointer journey pass."
+      "evidence": "Shared controls remove bag mode/permanent toolbar; actual browser asserts control bounds and exact cell0,0 origin during selection/rejection."
     },
-    "Consumer AC2": {
+    "Core AC17": {
       "status": "PASS",
-      "evidence": "Actual second-cell bag drag saves anchor(3,3); tap selection/placement, starter reason, rejected placement and exact board-origin invariants pass on mobile and desktop."
+      "evidence": "Core hit tests distinguish item, free usable bag cell and mask holes/gaps; actual second-cell pouch drag saves anchor3,3; shared full-bag label keyboard fallback tested in Meat."
     },
-    "Consumer AC3": {
+    "Core AC18": {
       "status": "PASS",
-      "evidence": "Strict save waits for confirmation, authoritative rows are projected, failure restores all four buckets; browser reload and sale persistence pass."
+      "evidence": "Real Mushroom persistence tests and actual browser verify old-mask whole-item evacuation, same IDs/rotation and reload; core seam/no-op regressions cover boundary cases."
     },
-    "Consumer AC4": {
+    "Core AC19": {
       "status": "PASS",
-      "evidence": "Full browser suite passes purchase, sale, occupied-bag refusal, fusion, tutorial and sidebar contracts; full units663 pass."
+      "evidence": "Transaction tests cover invalid/no-op/revision conflict; product rollback and core pointercancel/capture/Escape prevent partial evacuation; browser Escape preserves server rows."
     },
-    "Consumer AC5": {
+    "Core AC20": {
       "status": "PASS",
-      "evidence": "Inspected fresh375\u00d7667 and1280\u00d7800 captures; controls and shortcuts never overlap cells. Deterministic5-card max-art shop, including four-row vine, preserves art and Ready above fold."
+      "evidence": "Shared public shop price is supplied; occupied bag sale refusal and contextual item sale persist correctly; Meat mobile Cancel and keyboard menu tests pass."
+    },
+    "Core AC21": {
+      "status": "PASS",
+      "evidence": "Fresh drag-bag mobile/desktop PNG+JSON show non-intercepting art under the grabbed cell and snapped preview; controller tests cover rotation/offset."
+    },
+    "Core AC22": {
+      "status": "PASS",
+      "evidence": "Both nested checkouts pin3f77736; cross-consumer gate passes runtime f05461d with locales/user-flow updates and durable PNG+JSON."
     }
   },
   "verification": {
-    "fullE2E": {
-      "passed": 54,
-      "skipped": 1,
-      "failed": 0,
-      "retries": 0,
-      "skipReason": "Opt-in home-field candidate asset preview; HOME_FIELD_CANDIDATE_PREVIEW not enabled",
-      "duration": "4.1m"
-    },
     "unit": {
-      "passed": 663,
-      "failed": 0,
-      "durationMs": 66717,
-      "scope": "Final source validated by cross-consumer gate"
+      "passed": 665,
+      "failed": 0
     },
-    "build": "PASS",
-    "focusedFinalFoldAndPointer": {
+    "screens": {
+      "passed": 3,
+      "failed": 0
+    },
+    "focusedBrowser": {
       "passed": 2,
       "failed": 0,
-      "retries": 0
+      "retries": 0,
+      "durationSeconds": 21.7
     },
-    "crossConsumerGate": "PASS on c3776d9; final core commit documentation only"
+    "build": "PASS",
+    "crossConsumerGate": "PASS; core480, Mushroom665/3screens/2focused, Meat119/9browser, core pack, both builds, hosted/local synthetic deploy configurations",
+    "fullE2E": {
+      "passedWithoutRetry": 53,
+      "passedAfterRetry": 1,
+      "successful": 54,
+      "failed": 0,
+      "skipped": 1,
+      "duration": "4.5m",
+      "skipReason": "Opt-in home-field candidate preview disabled",
+      "retryReason": "Viewport media-query component update not awaited before geometry measurement; final scoped regression waits for responsive component parent."
+    },
+    "tallBagEvacuationAndSkin": {
+      "passed": 3,
+      "failed": 0,
+      "retries": 0,
+      "durationSeconds": 20.2
+    },
+    "finalResponsiveJourney": {
+      "passed": 2,
+      "failed": 0,
+      "retries": 0,
+      "durationSeconds": 48.9,
+      "scope": "Full happy path and backpack input journey after responsive-parent wait"
+    }
   },
   "visualEvidence": [
     "raw/backpack-desktop.png",
     "raw/backpack-mobile.png",
+    "raw/drag-bag-desktop.png",
+    "raw/drag-bag-mobile.png",
     "raw/full-shop-desktop.png",
     "raw/recipes-desktop.png",
-    "raw/recipes-mobile.png",
-    "raw/before-pointer.png",
-    "raw/pointer-preview.png"
+    "raw/recipes-mobile.png"
   ],
   "realDevices": {
     "status": "PENDING_USER",
-    "canonicalCriterion": "Core AC9",
-    "reason": "User will test actual iOS/Android via shared device acceptance script; Chromium touch emulation is reported separately"
+    "canonicalCriteria": [
+      "Core AC9",
+      "Core AC23"
+    ],
+    "reason": "Physical iOS/Android Telegram WebViews are user-owned acceptance; Chromium emulation reported separately"
   },
-  "finalCorePin": "220ebae"
+  "historicalVerification": {
+    "runtimeCore": "c3776d9",
+    "criteria": {
+      "Consumer AC1": {
+        "status": "PASS",
+        "evidence": "Shared select/actions preserve instance IDs; adapter regressions and actual tap/pointer journey pass."
+      },
+      "Consumer AC2": {
+        "status": "PASS",
+        "evidence": "Actual second-cell bag drag saves anchor(3,3); tap selection/placement, starter reason, rejected placement and exact board-origin invariants pass on mobile and desktop."
+      },
+      "Consumer AC3": {
+        "status": "PASS",
+        "evidence": "Strict save waits for confirmation, authoritative rows are projected, failure restores all four buckets; browser reload and sale persistence pass."
+      },
+      "Consumer AC4": {
+        "status": "PASS",
+        "evidence": "Full browser suite passes purchase, sale, occupied-bag refusal, fusion, tutorial and sidebar contracts; full units663 pass."
+      },
+      "Consumer AC5": {
+        "status": "PASS",
+        "evidence": "Inspected fresh375\u00d7667 and1280\u00d7800 captures; controls and shortcuts never overlap cells. Deterministic5-card max-art shop, including four-row vine, preserves art and Ready above fold."
+      }
+    },
+    "verification": {
+      "fullE2E": {
+        "passed": 54,
+        "skipped": 1,
+        "failed": 0,
+        "retries": 0,
+        "skipReason": "Opt-in home-field candidate asset preview; HOME_FIELD_CANDIDATE_PREVIEW not enabled",
+        "duration": "4.1m"
+      },
+      "unit": {
+        "passed": 663,
+        "failed": 0,
+        "durationMs": 66717,
+        "scope": "Final source validated by cross-consumer gate"
+      },
+      "build": "PASS",
+      "focusedFinalFoldAndPointer": {
+        "passed": 2,
+        "failed": 0,
+        "retries": 0
+      },
+      "crossConsumerGate": "PASS on c3776d9; final core commit documentation only"
+    },
+    "visualEvidence": [
+      "raw/backpack-desktop.png",
+      "raw/backpack-mobile.png",
+      "raw/full-shop-desktop.png",
+      "raw/recipes-desktop.png",
+      "raw/recipes-mobile.png",
+      "raw/before-pointer.png",
+      "raw/pointer-preview.png"
+    ],
+    "realDevices": {
+      "status": "PENDING_USER",
+      "canonicalCriterion": "Core AC9",
+      "reason": "User will test actual iOS/Android via shared device acceptance script; Chromium touch emulation is reported separately"
+    },
+    "finalCorePin": "220ebae"
+  }
 }

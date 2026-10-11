@@ -1,3 +1,6 @@
+import { getBackpackLoadoutRevision } from '@microwavedev/backpack-game-core/modules/loadout';
+import { readCurrentRoundItems } from '../../app/server/services/game-run-loadout.js';
+import { applyRunLoadoutPlacements } from '../../app/server/services/run-service.js';
 // Step 0 of docs/loadout-refactor-plan.md — failing goal-defining tests.
 //
 // Each test encodes a specific success criterion from §10 of the plan.
@@ -640,4 +643,38 @@ test('[Req 7-G] bot ghost fallback writes real rows into game_run_loadout_items'
       `synthetic bot rows for ${row.game_run_id} should preserve active/rotated bag state`
     );
   }
+});
+
+
+test('[Req 2-H] bag relocation commits evacuation and guards stale full-state saves', async () => {
+  await freshDb();
+  const { playerId, run } = await bootPlayerInRun();
+  await seedRunLoadout(playerId, run.id, [
+    { id: 'moving-bag', artifactId: 'moss_pouch', x: 3, y: 0, width: 1, height: 2, active: true },
+    { id: 'moving-content', artifactId: 'spore_needle', x: 3, y: 0, width: 1, height: 1, rotated: 1 },
+    { id: 'other-content', artifactId: 'spore_needle', x: 0, y: 0, width: 1, height: 1 }
+  ]);
+  const before = await readCurrentRoundItems(null, run.id, playerId, 1);
+  const revision = getBackpackLoadoutRevision(before);
+  await applyRunLoadoutPlacements(playerId, run.id, before, { expectedLoadoutRevision: revision });
+  assert.deepEqual(await readCurrentRoundItems(null, run.id, playerId, 1), before);
+  const invalidBeforeMove = before.map((row) => row.id === 'moving-bag' ? { ...row, x: 0, y: 0 } : { ...row });
+  await assert.rejects(applyRunLoadoutPlacements(playerId, run.id, invalidBeforeMove, { expectedLoadoutRevision: revision }), /bag placement/i);
+  assert.deepEqual(await readCurrentRoundItems(null, run.id, playerId, 1), before);
+
+  const moved = before.map((row) => row.id === 'moving-bag' ? { ...row, y: 3 } : { ...row });
+  await applyRunLoadoutPlacements(playerId, run.id, moved, { expectedRound: 1, expectedLoadoutRevision: revision });
+  const saved = await readCurrentRoundItems(null, run.id, playerId, 1);
+  assert.equal(saved.find((row) => row.id === 'moving-content').x, -1);
+  assert.equal(saved.find((row) => row.id === 'moving-content').y, -1);
+  assert.equal(saved.find((row) => row.id === 'moving-content').rotated, 1);
+  assert.equal(saved.find((row) => row.id === 'other-content').x, 0);
+  assert.deepEqual(saved.map((row) => row.id), before.map((row) => row.id));
+  const savedRevision = getBackpackLoadoutRevision(saved);
+  await applyRunLoadoutPlacements(playerId, run.id, saved, { expectedLoadoutRevision: savedRevision });
+  assert.equal(getBackpackLoadoutRevision(await readCurrentRoundItems(null, run.id, playerId, 1)), savedRevision);
+  await assert.rejects(applyRunLoadoutPlacements(playerId, run.id, before, { expectedLoadoutRevision: revision }), /Stale loadout revision/);
+  const invalid = saved.map((row) => row.id === 'moving-bag' ? { ...row, x: 0, y: 0 } : { ...row });
+  await assert.rejects(applyRunLoadoutPlacements(playerId, run.id, invalid, { expectedLoadoutRevision: savedRevision }), /bag placement/i);
+  assert.deepEqual(await readCurrentRoundItems(null, run.id, playerId, 1), saved);
 });

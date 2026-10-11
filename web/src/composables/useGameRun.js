@@ -78,13 +78,14 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     return payload;
   }
 
-  function enqueueRunLoadoutSave({ strict = false } = {}) {
+  function enqueueRunLoadoutSave({ strict = false, expectedLoadoutRevision } = {}) {
     if (!state.gameRun || !state.bootstrap?.activeMushroomId) return Promise.resolve(null);
     const snapshot = {
       gameRunId: state.gameRun.id,
       roundNumber: state.gameRun.currentRound,
       mushroomId: state.bootstrap.activeMushroomId,
-      items: buildLoadoutPayloadItems()
+      items: buildLoadoutPayloadItems(),
+      ...(expectedLoadoutRevision ? { loadoutRevision: expectedLoadoutRevision } : {})
     };
     const request = loadoutSaveQueue.then(() => {
       const api = gameApi();
@@ -466,15 +467,25 @@ export function useGameRun(state, goTo, getArtifact, refreshBootstrap, loadRepla
     state.draggingSource = '';
   }
 
-  async function persistRunLoadout({ strict = false } = {}) {
-    return enqueueRunLoadoutSave({ strict });
+  async function reloadRunLoadout() {
+    const api = gameApi();
+    const response = await api.request(api.routePath('bootstrap'));
+    const run = response.activeGameRuns?.find((entry) => entry.id === state.gameRun.id) || response.activeGameRun;
+    if (!run) throw new Error('Active run is no longer available');
+    Object.assign(state.gameRun, run);
+    state.gameRunShopOffer = run.shopOffer || [];
+    projectRunLoadout(state.gameRun);
+  }
+
+  async function persistRunLoadout({ strict = false, expectedLoadoutRevision } = {}) {
+    return enqueueRunLoadoutSave({ strict, expectedLoadoutRevision });
   }
 
   return {
     startNewGameRun, resumeGameRun, signalReady,
     continueToNextRound, requestAbandonRun, cancelAbandonRun, confirmAbandonRun, loadRunShopOffer, loadRunSummary, loadRunComplete,
     refreshRunShop, sellRunItemAction, buyRunShopItem,
-    getRunRefreshCost, getRunSellPrice, persistRunLoadout,
+    getRunRefreshCost, getRunSellPrice, persistRunLoadout, reloadRunLoadout,
     onSellZoneDragOver, onSellZoneDragLeave, onSellZoneDrop
   };
 }

@@ -12,9 +12,9 @@
   "document": {
     "scrollWidth": 375,
     "clientWidth": 375,
-    "scrollHeight": 1194,
+    "scrollHeight": 1008,
     "clientHeight": 667,
-    "scrollY": 138
+    "scrollY": 0
   },
   "overflowX": false,
   "rawStatusTokens": []

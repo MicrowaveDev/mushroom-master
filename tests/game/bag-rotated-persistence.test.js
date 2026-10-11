@@ -147,7 +147,7 @@ test('[bag-rotated] getActiveGameRun exposes rotated in loadoutItems', async () 
   assert.equal(after.loadoutItems.find((i) => i.id === bought.id).rotated, 2);
 });
 
-test('[bag-rotated] non-bag rows stay rotated=0 even if the client lies', async () => {
+test('[bag-rotated] non-bag rows persist orientation through placement and unchanged save', async () => {
   await freshDb();
   const { playerId, run } = await bootRun({ telegramId: 7005 });
   await forceShopOffer(run.id, playerId, 1, ['bark_plate']);
@@ -169,7 +169,15 @@ test('[bag-rotated] non-bag rows stay rotated=0 even if the client lies', async 
 
   assert.equal(
     await readBagRotated(run.id, playerId, 'bark_plate', 1),
-    0,
-    'non-bag row must stay rotated=0 regardless of client payload'
+    1,
+    'non-bag orientation must survive the placement save'
   );
+  const saved = await getActiveGameRun(playerId);
+  await applyRunLoadoutPlacements(playerId, run.id, saved.loadoutItems.map((row) => {
+    const { rotated, ...placement } = row;
+    return placement;
+  }));
+  assert.equal(await readBagRotated(run.id, playerId, 'bark_plate', 1), 1,
+    'omitting orientation on an unchanged save must preserve the persisted value');
+
 });

@@ -1,6 +1,6 @@
 {
   "screenshot": "backpack-mobile.png",
-  "description": "Confirmed moss pouch at (3,3), with grabbed-cell offset preserved; uncovered item drop rejected; selection canceled. Controls before board, inline shortcuts and full scrollable grid.",
+  "description": "Confirmed Moss Pouch at3,3; its former contents are in Storage. Invalid item placement was rejected without mutation. Idle has no actions toolbar; inline shortcuts and full scrollable grid.",
   "viewport": {
     "width": 375,
     "height": 667
@@ -12,7 +12,7 @@
   "document": {
     "scrollWidth": 375,
     "clientWidth": 375,
-    "scrollHeight": 1194,
+    "scrollHeight": 1153,
     "clientHeight": 667,
     "scrollY": 0
   },

@@ -235,11 +235,12 @@ Step 2: Prep Screen (Round N)
     - [Req 4-J] Selling same-round item returns full price
     - [Req 4-K] Selling older item returns half price
     - [Req 2-G] Buying and activating a bag runs the 2D first-fit packer: bags land alongside the base inventory in the first free cell (e.g. `(3, 0)` for a 2×1 bag), not below it, and the grid only extends downward when no alongside slot fits.
-    - Tapping Storage or a placed item selects its exact instance; it does not auto-place or remove it. Tap a destination cell to place, or use the explicit Auto place / Rotate / To storage / Cancel actions.
+    - Tapping Storage or a placed item selects its exact instance; it does not auto-place or remove it. Tap a destination cell to place; use ↻ for rotation and More actions for Auto-place, Storage, Sell or Cancel.
     - Pointer drag shows the artifact or bag artwork under the grabbed point, preserves the grabbed cell, previews the whole footprint, and persists a valid drop immediately. Invalid drops leave the original placement unchanged and explain the conflicting cells.
-    - [Req 2-H] Move bags enables selecting a bag directly on the board. The starter bag is fixed. A bag move is rejected with a reason if it would leave an item cell outside the union of all bags; valid moves preserve coverage and avoid bag overlap. Bag chips remain an alternative selection control.
+    - [Req 2-H] Drag a bag by an empty usable cell; an occupied cell grabs its item. Tap alone does not move a bag. The starter bag is fixed. A bag label provides an accessible selection fallback even when full. Successful moves put every whole item intersecting its old mask into Storage in one save; invalid drops, no-op drops and cancellation change nothing. Preview highlights affected items and shows their count before release.
+    - Idle has no action toolbar or items/bags switch. Selecting an instance reveals compact rotation and More actions before the board; Storage, Auto-place, Sell and Cancel live in that menu. Dragging into Storage returns an item; the separate sale target shows its refund before release. Escape or tapping outside active zones cancels selection.
     - A single item may span adjacent bags when every footprint cell is covered and empty.
-    - Placement, rotation and removal persist across reload; failed saves roll back the client position.
+    - Placement, rotation and removal persist across reload; failed saves roll back the client position. A stale loadout revision reloads the authoritative run and its Storage instead of overwriting another write. Existing persisted bag dimensions remain part of that revision, even when the rendered mask has a different physical orientation.
     - signalReady() called → POST /api/game-run/:id/ready
     - Navigate to replay screen (automatic)
 

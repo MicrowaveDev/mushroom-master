@@ -218,6 +218,8 @@ const App = {
       effectiveRows: shop.effectiveRows,
       persistRunLoadout: gameRun.persistRunLoadout,
       onSell: gameRun.sellRunItemAction,
+      getSellPrice: (row) => gameRun.getRunSellPrice(row.artifactId),
+      onConflict: gameRun.reloadRunLoadout,
       async onCommitted({ action, item, previousRows }) {
         telegram.impact('light');
         const previous = previousRows.find((row) => row.id === item.id);

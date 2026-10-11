@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { repoRoot } from '../shared/repo-root.js';
 import { PORTRAIT_VARIANTS } from './game-data.js';
 import { createId, nowIso } from './lib/utils.js';
@@ -365,7 +365,11 @@ async function _doReset() {
 
 export async function withTransaction(work) {
   const { sequelize } = await getDb();
-  return sequelize.transaction(async (transaction) => {
+  // Reserve the SQLite writer before reading placement/revision state. A
+  // deferred read transaction cannot upgrade while another connection writes.
+  // PostgreSQL retains its normal transaction configuration.
+  const options = sequelize.getDialect() === 'sqlite' ? { type: Transaction.TYPES.IMMEDIATE } : {};
+  return sequelize.transaction(options, async (transaction) => {
     const client = {
       query(sql, params = []) {
         return runQuery(sql, params, transaction);

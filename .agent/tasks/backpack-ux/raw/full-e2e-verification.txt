@@ -1,0 +1,130 @@
+
+> telegram-mushroom-archiver@1.0.0 game:test:e2e
+> node app/scripts/runners/run-game-playwright.js --suite=e2e
+
+[game:test:e2e] backend port 3321
+[game:test:e2e] frontend port 4374
+[WebServer] (node:14724) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:15217) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:15284) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] [INEFFECTIVE_DYNAMIC_IMPORT] Warning: vendor/backpack-game-core/src/vue/components/ArtifactGridBoard.js is dynamically imported by vendor/backpack-game-core/src/vue/pages/HomeScreen.js but also statically imported by vendor/backpack-game-core/src/vue/components.js, vendor/backpack-game-core/src/vue/components/HomeSocialSidebar.js, dynamic import will not move module into another chunk.
+[WebServer] 
+
+[WebServer] [plugin builtin:vite-reporter] 
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+[WebServer] (node:15524) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:15577) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 55 tests using 1 worker
+
+(node:15749) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:15749) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/55] tests/game/artifact-bitmap-screenshots.spec.js:23:1 › generated artifact bitmap renders in shop and as one continuous placed bag image
+[2/55] tests/game/artifact-bitmap-screenshots.spec.js:110:1 › artifact shop cards expose non-color role glyphs for each role
+[3/55] tests/game/challenge-run.spec.js:40:1 › [Req 8-A, 8-B, 8-C, 8-D] challenge mode: invite → accept → readies → round resolves → UI screenshots
+[4/55] tests/game/challenge-run.spec.js:142:1 › [Req 12-A] challenge mode: SSE drop renders the reconnection banner
+[5/55] tests/game/challenge-run.spec.js:169:1 › [Req 12-A, 12-B] challenge mode: combat completed while disconnected → reconnect lands on missed result
+[6/55] tests/game/challenge-run.spec.js:221:1 › [Req 1-F, 8-A] challenge mode: abandon by one player ends for both + screenshots
+[7/55] tests/game/coverage-gaps.spec.js:17:1 › [Flow A] onboarding screen shows for new player without active mushroom
+[8/55] tests/game/coverage-gaps.spec.js:47:1 › [Flow A] auth screen catalog claims match live public data
+[9/55] tests/game/coverage-gaps.spec.js:64:1 › unauthenticated redirect rewrites stale deep-link URL to auth
+[10/55] tests/game/coverage-gaps.spec.js:73:1 › legacy shop-state endpoint is not available
+[11/55] tests/game/coverage-gaps.spec.js:84:1 › [Flow A] local dev session recovers stale run-complete URL without run id
+[12/55] tests/game/coverage-gaps.spec.js:109:1 › [Flow A] menu logout clears the current session and returns to auth
+[13/55] tests/game/coverage-gaps.spec.js:141:1 › [Flow A Step 3] first mushroom pick auto-starts solo run and lands on prep
+[14/55] tests/game/coverage-gaps.spec.js:187:1 › [Flow A Step 3] re-pick (existing player switching mushroom) goes to home, not prep
+[15/55] tests/game/coverage-gaps.spec.js:211:1 › clicking the active mushroom on home does not re-save or flash routes
+[16/55] tests/game/coverage-gaps.spec.js:237:1 › [Req 1-H] daily battle limit rejects game start after 10 runs
+[17/55] tests/game/coverage-gaps.spec.js:263:1 › [Req 4-L] cannot sell a bag that has items in it
+[18/55] tests/game/coverage-gaps.spec.js:331:1 › [Req 4-F, 12-D] game run state and shop offer survive page reload
+[19/55] tests/game/coverage-gaps.spec.js:372:1 › [Req 10-A, 13-C] post-Ready lands on replay with rewards, Continue label, and rating delta
+[20/55] tests/game/coverage-gaps.spec.js:418:1 › [Req 13-D] post-replay button shows "Home" for standalone replay from history
+[21/55] tests/game/coverage-gaps.spec.js:452:1 › replay rewards stat-grid resolves to display:grid (not stacked vertical list)
+[22/55] tests/game/coverage-gaps.spec.js:509:1 › [Flow G] first-run tutorial can be skipped and replayed once from settings
+[23/55] tests/game/coverage-gaps.spec.js:645:1 › [Flow G] settings: change language and verify persistence
+[24/55] tests/game/coverage-gaps.spec.js:674:1 › [Req 13-B] game run history → run summary → round battle replay
+[25/55] tests/game/fusion-ui.spec.js:12:1 › [fusion] prep highlights ingredients and next shop entry reveals fused result
+[26/55] tests/game/fusion-ui.spec.js:96:1 › [Req 11-F] sidebar recipes screen lists fusion artifacts
+[27/55] tests/game/fusion-ui.spec.js:138:1 › [fusion] local animation lab demonstrates every recipe with the production reveal
+[28/55] tests/game/fusion-ui.spec.js:174:1 › [Req 11-F] sidebar recipes are reachable from shop and battle screens
+[29/55] tests/game/fusion-ui.spec.js:243:1 › [Req 11-F] mobile recipes sidebar switcher stays docked while recipes scroll
+[30/55] tests/game/google-auth.spec.js:41:1 › [Flow A] Google browser button and session handoff reach onboarding
+[31/55] tests/game/google-auth.spec.js:74:1 › [Flow A] Google disabled and Telegram contexts hide the Google button
+[32/55] tests/game/google-auth.spec.js:87:1 › [Flow A] Google script failure leaves Telegram login available
+[33/55] tests/game/home-field-candidate-preview.spec.js:108:1 › [home-field] candidate assets render in clean field preview
+[34/55] tests/game/home-field-preview.spec.js:81:1 › [Req 15-B] home field layout preview composes tile and object layers
+[35/55] tests/game/screenshots.spec.js:113:1 › [Req 4-Z, 14-F] wallet and pack state screenshots have stable layout
+[36/55] tests/game/screenshots.spec.js:324:1 › [Req 2-A, 4-D, 13-A] capture key v1 screens (dual viewport)
+[37/55] tests/game/shared-social-catalog-pages.spec.js:4:1 › shared friends and recipes pages render through Mushroom adapters
+[38/55] tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots
+(node:40566) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:40566) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[39/55] tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots (retry #1)
+  1) tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots 
+
+    Error: desktop prep shop and left column should share a top edge
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 8
+    Received:    84
+
+      120 |   expect(hudBox && containerBox && inventoryBox && shopBox && readyBox, 'desktop prep landmarks must have bounding boxes').toBeTruthy();
+      121 |   expect(hudBox.y + hudBox.height, 'desktop prep HUD should sit above both workspace columns').toBeLessThanOrEqual(Math.min(containerBox.y, shopBox.y));
+    > 122 |   expect(Math.abs(shopBox.y - containerBox.y), 'desktop prep shop and left column should share a top edge').toBeLessThanOrEqual(8);
+          |                                                                                                             ^
+      123 |   expect(shopBox.x, 'desktop prep shop should sit to the right of inventory').toBeGreaterThan(inventoryBox.x + inventoryBox.width);
+      124 |   expect(readyBox.y + readyBox.height, 'desktop prep Ready button should be visible without scroll').toBeLessThanOrEqual(DESKTOP_VIEWPORT.height);
+      125 |   await expect(page.getByRole('button', { name: /ready|готов/i })).toBeVisible();
+        at /Users/microwavedev/workspace/microwave-hub/mushroom-master/tests/game/solo-run.spec.js:122:109
+
+    Error Context: test-results/solo-run--Req-1-A-4-B-4-D--85b22-ll-journey-with-screenshots/error-context.md
+
+
+[40/55] tests/game/solo-run.spec.js:239:1 › [Req 1-F] solo game run: abandon mid-game with screenshots
+[41/55] tests/game/solo-run.spec.js:264:1 › [Req 5-A, 5-C, 2-B, 12-D] bag activation, expansion, and reload persistence
+[42/55] tests/game/solo-run.spec.js:340:1 › round transitions: replay → continue → next prep (not home) while lives remain
+[43/55] tests/game/solo-run.spec.js:436:1 › game run loadout budget scales with current round (not legacy 5-coin cap)
+[44/55] tests/game/solo-run.spec.js:525:1 › items, bags, and sell state all survive page reload
+[45/55] tests/game/solo-run.spec.js:588:1 › [Req 2-F, 2-G, 2-H] unified grid packs bags alongside the base inventory
+[46/55] tests/game/solo-run.spec.js:678:1 › [Req 2-F] tetromino-bag mask gaps render visibly (no hidden grid holes)
+[47/55] tests/game/solo-run.spec.js:732:1 › backpack tall bag preview does not overlap its caption
+[48/55] tests/game/solo-run.spec.js:784:1 › backpack input journey › backpack controls: select, place, move bag by pointer, reject and persist
+[49/55] tests/game/support-admin-ui.spec.js:107:1 › [Req 4-Z] support admin UI can lookup and adjust profile wallet currency
+[50/55] tests/game/support-admin-ui.spec.js:147:1 › [Req 4-Z, 14-F] support admin UI can manage assets and refund purchases
+[51/55] tests/game/support-admin-ui.spec.js:214:1 › [Req 14-F] support admin gacha tab can author, validate, and publish a database pack
+[52/55] tests/game/wallet-purchase-ui.spec.js:73:1 › [Req 4-Z] wallet shop lists bundles, opens external checkout, and shows failure/support states
+[53/55] tests/game/wallet-purchase-ui.spec.js:154:1 › [Req 4-Z] Telegram invoice completion refreshes the wallet balance
+[54/55] tests/game/wallet-purchase-ui.spec.js:227:1 › [Req 4-Y, 14-F] buying an active mushroom skin equips it without changing character XP
+[55/55] tests/game/wallet-purchase-ui.spec.js:263:1 › [Req 14-F] skin picker presents roll-only packs separately from direct-buy skins
+[56/55] (retries) tests/game/wallet-purchase-ui.spec.js:422:1 › [Req 14-F] skin picker shows complete, future, and expired pack states
+  1 flaky
+    tests/game/solo-run.spec.js:67:1 › [Req 1-A, 4-B, 4-D, 4-F, 9-B, 11-B, 12-D, 13-A] solo game run: full journey with screenshots 
+  1 skipped
+  53 passed (4.5m)

@@ -36,7 +36,7 @@ Last verified against code: 2026-04-16.
 - **2-E.** Container capacity is unlimited (limited only by coins).
 - **2-F.** The prep loadout panel is a **single unified grid** `BAG_COLUMNS = 6` wide and tall enough to fit all active bag footprints (`max(BAG_ROWS, max(anchorY + bag.rows))`). There is no separate base-inventory special case.
 - **2-G.** Activating a bag runs a 2D first-fit packer in unified-grid coords that scans top-to-bottom, left-to-right and avoids other active bags.
-- **2-H.** Bag chips are draggable regardless of whether artifacts overlap them. Moving, rotating, or deactivating a bag first unplaces affected artifacts to the container, then applies the bag mutation.
+- **2-H.** A bag can be dragged from a free usable cell of its shape; an occupied cell selects its artifact first. Successful bag relocation atomically moves each artifact intersecting the old usable mask wholly to Storage, preserving instance IDs and orientation. Invalid placement, cancellation, and an unchanged anchor/orientation leave all contents unchanged. Fully occupied bags expose a contextual Move action. Rotation, deactivation, and sale retain their existing policy. Placement saves validate geometry on the server and reject stale loadout revisions.
 - **2-I.** Items may span adjacent bags. Per-cell coverage validation accepts the placement as long as every occupied artifact cell lies inside at least one active bag's shape mask.
 - **2-J.** Bag membership is **many-to-many and derived at runtime from tile overlap**: an item is "in" every bag whose footprint overlaps any of the item's cells.
 - **2-K.** `game_run_loadout_items` stores absolute `(x, y)` coordinates for placed bags and placed artifacts. `bag_id` is removed; container rows use `(-1, -1)`.

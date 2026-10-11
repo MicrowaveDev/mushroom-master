@@ -57,3 +57,24 @@
     transform: translateY(-50%);
   }
 }
+
+/* Evacuated contents must not push Ready below the desktop fold. Keep Storage
+   cards horizontal and use the same compact cell size as the mobile board;
+   bitmap/mask dimensions remain intrinsic, including tall bags. */
+@media (min-width: 680px) {
+  .mushroom-prep-screen .artifact-inventory-grid {
+    --artifact-cell-size: 36px;
+    --board-gap: 6px;
+  }
+  .mushroom-prep-screen .container-item {
+    display: flex;
+    align-items: center;
+    width: min(220px, 100%);
+    min-height: 60px;
+  }
+  .mushroom-prep-screen .container-item-visual {
+    --artifact-cell-size: 24px;
+    flex-shrink: 0;
+  }
+  .mushroom-prep-screen .container-item-copy { min-width: 0; }
+}
