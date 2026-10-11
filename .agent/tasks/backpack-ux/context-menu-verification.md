@@ -13,3 +13,9 @@ Fresh `raw/context-menu-mobile.png` and `raw/context-menu-desktop.png` plus JSON
 ## Verification
 
 Cross-consumer gate passed on runtime `5ed7d35`: core 486/486 plus package dry-run; Mushroom 665/665, production build, 3/3 screen checks and 3/3 focused browser journeys; Meat 119/119, 9/9 browser checks, both synthetic deployment configuration checks and production build. Final core documentation pin `5a9842b` does not change runtime code. The local gate log was `/tmp/context-menu-delivery-gate.log`; these recorded counts are the durable handoff. Telegram device acceptance remains user-owned; browser touch input does not establish real iOS/Android WebView acceptance.
+
+## Bag drag release follow-up (2026-10-11)
+
+Consumes shared core `3a779aa` (core #13): board drops clear selection after rejection or save failure, keep the reason briefly, and suppress trailing clicks on bag labels. The previous loadout remains intact on rejection; deliberate click-to-place retry behavior remains available. Core regression coverage includes successful, unchanged, rejected and failed-save bag drops.
+
+Verification: shared consumer gate passed on `3a779aa`: core 490/490; Mushroom 665/665, screens 3/3, backpack browser journey 1/1; Meat 119/119 and browser 9/9; both builds and hosted/local Meat config checks passed.
