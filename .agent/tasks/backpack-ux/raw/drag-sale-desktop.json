@@ -1,6 +1,6 @@
 {
-  "screenshot": "drag-bag-desktop.png",
-  "description": "Desktop1280×800: held Moss Pouch art under pointer at4,4, grabbed by its second cell4,3. Snapped cells3,4 and4,4 show the target; Escape cancels without saving.",
+  "screenshot": "drag-sale-desktop.png",
+  "description": "Dragging a Storage item shows its art under the pointer and a priced sale target immediately left of the compact right-aligned HUD; coins precede Wins and Lives.",
   "viewport": {
     "width": 1280,
     "height": 800

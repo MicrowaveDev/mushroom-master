@@ -1,9 +1,9 @@
-import { RunHud as CoreRunHud } from '@microwavedev/backpack-game-core/vue/components';
+import { RunHud as CoreRunHud, BackpackSaleAction } from '@microwavedev/backpack-game-core/vue/components';
 
 export const RunHud = {
   name: 'RunHud',
-  components: { CoreRunHud },
-  props: ['state', 't'],
+  components: { CoreRunHud, BackpackSaleAction },
+  props: ['state', 't', 'interaction'],
   computed: {
     player() {
       return this.state.gameRun?.player || {};
@@ -27,6 +27,8 @@ export const RunHud = {
       :labels="labels"
       :run-currency="runCurrency"
       currency-class="run-hud-item run-hud-coins"
-    />
+    >
+      <template #currency-action><BackpackSaleAction v-if="interaction" :interaction="interaction" :labels="t.backpackInteraction" /></template>
+    </CoreRunHud>
   `
 };

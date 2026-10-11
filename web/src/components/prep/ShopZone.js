@@ -117,6 +117,7 @@ export const ShopZone = {
       :row-class="offerClass"
       :item-attrs="itemDataset"
       :sell-zone="sellZone"
+      :show-sell-zone="false"
       @refresh="$emit('refresh-shop')"
       @buy="$emit('buy-run-item', $event.artifactId)"
       @sell-dragover="$emit('sell-dragover', $event)"

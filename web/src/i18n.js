@@ -1,8 +1,9 @@
 export const messages = {
   ru: {
     backpackInteraction: {
-      more: 'Действия', bagContentsHint: 'В хранилище перейдут предметы: {count}',
-      sell: 'Продать', rotate: 'Повернуть', storage: 'В хранилище', autoPlace: 'Разместить автоматически', cancel: 'Отмена',
+      move: 'Переместить',
+      bagContentsHint: 'В хранилище перейдут предметы: {count}',
+      sell: 'Продать', rotate: 'Повернуть', storage: 'В хранилище', autoPlace: 'Разместить автоматически',
       reasons: {
         occupied: 'Это место занято.', uncovered: 'Все клетки предмета должны находиться в сумках.',
         out_of_bounds: 'Предмет выходит за край поля.', bag_contents: 'После перемещения предмет останется вне сумок.',
@@ -355,8 +356,9 @@ export const messages = {
   },
   en: {
     backpackInteraction: {
-      more: 'More actions', bagContentsHint: '{count} items will move to Storage',
-      sell: 'Sell', rotate: 'Rotate', storage: 'To storage', autoPlace: 'Auto place', cancel: 'Cancel',
+      move: 'Move',
+      bagContentsHint: '{count} items will move to Storage',
+      sell: 'Sell', rotate: 'Rotate', storage: 'To storage', autoPlace: 'Auto place',
       reasons: {
         occupied: 'This space is occupied.', uncovered: 'Every item cell must be inside a bag.',
         out_of_bounds: 'The item extends beyond the board.', bag_contents: 'Moving this bag would leave an item uncovered.',

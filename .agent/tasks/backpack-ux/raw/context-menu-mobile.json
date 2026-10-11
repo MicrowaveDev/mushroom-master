@@ -1,6 +1,6 @@
 {
-  "screenshot": "backpack-mobile.png",
-  "description": "Confirmed Moss Pouch at3,3; its former contents are in Storage. Invalid item placement was rejected without mutation. Idle has no actions toolbar; inline shortcuts and full scrollable grid.",
+  "screenshot": "context-menu-mobile.png",
+  "description": "mobile: clicking an item in Storage opens Move, Rotate, Storage, Auto-place, priced Sell in a floating rounded menu. No persistent action rail; all menu edges are inside the viewport.",
   "viewport": {
     "width": 375,
     "height": 667
@@ -14,7 +14,7 @@
     "clientWidth": 375,
     "scrollHeight": 1003,
     "clientHeight": 667,
-    "scrollY": 0
+    "scrollY": 336
   },
   "overflowX": false,
   "rawStatusTokens": []

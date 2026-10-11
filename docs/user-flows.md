@@ -210,22 +210,22 @@ Step 2: Prep Screen (Round N)
   Condition: state.gameRun exists
   Above the fold (mobile):
     - Round HUD: "Раунд N" / "Round N"
-    - Stats HUD: Wins W, Lives L, Coins C
+    - Stats HUD: Coins C, Wins W, Lives L
     - Container zone header
     - Top portion of inventory grid (first 1-2 rows)
   Below fold on mobile (scroll required):
-    - Full inventory grid, shop items, sell zone, Ready/Abandon buttons
-  Desktop note: HUD above a cohesive two-column workspace; backpack + inventory on the left and shop + sell zone on the right with aligned column top edges (tutorial guidance reserves space above the shop); Ready button visible without scroll
+    - Full inventory grid, shop items, Ready/Abandon buttons
+  Desktop note: HUD above a cohesive two-column workspace; backpack + inventory on the left and shop on the right with aligned column top edges (tutorial guidance reserves space above the shop); Ready button visible without scroll
   Sees:
     - Round HUD: "Раунд N" / "Round N"
-    - Stats HUD: Wins W, Lives L, Coins C
+    - Stats HUD: Coins C, Wins W, Lives L
     - Season-rank stakes line: current run points and projected abandon result
     - [Req 2-A, 2-F] Unified grid, `BAG_COLUMNS = 6` wide — the base inventory occupies the top-left 3×3 (9 cells) and is always visible; the remaining cells are empty bag area (faint dashed borders, drop targets for bag chips). With no extra bags activated, at least 36 cells render.
     - [Req 3-A, 3-B] Round 1: 2 preset items at base-inventory (0,0) and (1,0)
     - Container zone (purchased but unplaced items)
     - [Req 4-D] Shop with 5 items + prices
     - [Req 4-G] Refresh button with cost label (1 or 2 coins)
-    - Sell zone (drag target)
+    - During item drag, a priced sale target appears immediately left of the compact right-aligned run HUD (coins, wins, lives).
     - "Готов" / "Ready" button
     - "Покинуть" / "Abandon" button
   Action: Buy items from shop, arrange on grid, click "Ready"
@@ -235,10 +235,10 @@ Step 2: Prep Screen (Round N)
     - [Req 4-J] Selling same-round item returns full price
     - [Req 4-K] Selling older item returns half price
     - [Req 2-G] Buying and activating a bag runs the 2D first-fit packer: bags land alongside the base inventory in the first free cell (e.g. `(3, 0)` for a 2×1 bag), not below it, and the grid only extends downward when no alongside slot fits.
-    - Tapping Storage or a placed item selects its exact instance; it does not auto-place or remove it. Tap a destination cell to place; use ↻ for rotation and More actions for Auto-place, Storage, Sell or Cancel.
+    - Tapping an item or bag in Storage or Backpack selects its exact instance and opens a single-column context menu without mutation. Move keeps it selected for a destination cell; Rotate, Auto-place, Storage and permitted priced Sell are in the menu. Outside input and Escape dismiss it.
     - Pointer drag shows the artifact or bag artwork under the grabbed point, preserves the grabbed cell, previews the whole footprint, and persists a valid drop immediately. Invalid drops leave the original placement unchanged and explain the conflicting cells.
     - [Req 2-H] Drag a bag by an empty usable cell; an occupied cell grabs its item. Tap alone does not move a bag. The starter bag is fixed. A bag label provides an accessible selection fallback even when full. Successful moves put every whole item intersecting its old mask into Storage in one save; invalid drops, no-op drops and cancellation change nothing. Preview highlights affected items and shows their count before release.
-    - Idle has no action toolbar or items/bags switch. Selecting an instance reveals compact rotation and More actions before the board; Storage, Auto-place, Sell and Cancel live in that menu. Dragging into Storage returns an item; the separate sale target shows its refund before release. Escape or tapping outside active zones cancels selection.
+    - Idle has no action toolbar or items/bags switch. Selection opens a floating menu with consistent line icons and no Cancel button; it stays within the viewport without shifting the board. Drag hides the menu. Dragging into Storage returns an item; the sale target to the left of the compact HUD shows its refund before release. Escape or input outside the menu cancels selection.
     - A single item may span adjacent bags when every footprint cell is covered and empty.
     - Placement, rotation and removal persist across reload; failed saves roll back the client position. A stale loadout revision reloads the authoritative run and its Storage instead of overwriting another write. Existing persisted bag dimensions remain part of that revision, even when the rendered mask has a different physical orientation.
     - signalReady() called → POST /api/game-run/:id/ready

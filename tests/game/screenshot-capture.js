@@ -65,7 +65,7 @@ export async function captureScreenshot(page, dir, name, options = {}) {
     };
   });
 
-  await page.screenshot({ path: path.join(dir, name), fullPage: true });
+  await page.screenshot({ path: path.join(dir, name), fullPage: options.fullPage ?? true });
 
   const manifest = {
     screenshot: name,

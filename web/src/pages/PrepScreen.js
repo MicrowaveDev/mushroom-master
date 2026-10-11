@@ -16,17 +16,6 @@ export const PrepScreen = {
     'preferredOrientation', 'getArtifactPrice', 'effectiveRows', 'placementPreviewAt',
     'fusionIngredientRowIds', 'fusionCandidateRowIds', 'fusionCandidateShopArtifactIds'
   ],
-  data() {
-    return { desktopControls: window.matchMedia('(min-width: 680px)').matches };
-  },
-  mounted() {
-    this.controlsMedia = window.matchMedia('(min-width: 680px)');
-    this.controlsMediaChange = (event) => { this.desktopControls = event.matches; };
-    this.controlsMedia.addEventListener('change', this.controlsMediaChange);
-  },
-  beforeUnmount() {
-    this.controlsMedia?.removeEventListener('change', this.controlsMediaChange);
-  },
   emits: [
     'auto-place', 'container-drag-start', 'drag-end',
     'container-dragover', 'container-drop',
@@ -79,8 +68,7 @@ export const PrepScreen = {
       :reconnecting-text="t.reconnecting"
     >
       <template #hud>
-        <run-hud :state="state" :t="t" />
-        <backpack-interaction-controls v-if="desktopControls" :interaction="interaction" :labels="t.backpackInteraction" />
+        <run-hud :state="state" :t="t" :interaction="interaction" />
       </template>
 
       <template #loadout>
@@ -99,7 +87,7 @@ export const PrepScreen = {
           @container-drop="$emit('container-drop', $event)"
         />
 
-        <backpack-interaction-controls v-if="!desktopControls" :interaction="interaction" :labels="t.backpackInteraction" />
+        <backpack-interaction-controls :interaction="interaction" :labels="t.backpackInteraction" :name-for-item="(item) => getArtifact(item.artifactId)?.name?.[state.lang] || getArtifact(item.artifactId)?.name?.en || item.artifactId" />
 
         <backpack-zone
           :interaction="interaction"

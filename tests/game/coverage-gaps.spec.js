@@ -288,16 +288,18 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   const containerBag = page.locator('.artifact-container-zone .container-item[data-artifact-id="moss_pouch"]');
   await expect(containerBag).toBeVisible({ timeout: 3000 });
   await containerBag.click();
+  if (await page.getByTestId('backpack-move').isVisible()) await page.getByTestId('backpack-move').click();
   await page.locator('[data-testid="unified-grid"] [data-cell-x="3"][data-cell-y="0"]').click();
-  await expect(page.getByTestId('backpack-more')).toBeHidden();
+  await expect(page.getByTestId('backpack-context-menu')).toBeHidden();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
   await page.locator('.prep-screen .shop-item[data-artifact-id="spore_needle"]').click();
   const containerItem = page.locator('.artifact-container-zone .container-item[data-artifact-id="spore_needle"]');
   await expect(containerItem).toBeVisible({ timeout: 3000 });
   await containerItem.click();
+  if (await page.getByTestId('backpack-move').isVisible()) await page.getByTestId('backpack-move').click();
   await page.locator('[data-testid="unified-grid"] [data-cell-x="3"][data-cell-y="0"]').click();
-  await expect(page.getByTestId('backpack-more')).toBeHidden();
+  await expect(page.getByTestId('backpack-context-menu')).toBeHidden();
 
   const rowsBeforeRefusal = (await api(request, player.sessionKey, '/api/bootstrap')).activeGameRun.loadoutItems;
   const placedItem = rowsBeforeRefusal.find((row) => row.artifactId === 'spore_needle' && row.x === 3 && row.y === 0);
@@ -308,16 +310,16 @@ test('[Req 4-L] cannot sell a bag that has items in it', async ({ page, request,
   // Removing the occupied bag would uncover its item and is rejected inline.
   const bagChip = page.locator('.active-bag-chip').first();
   await bagChip.click();
-  await page.getByTestId('backpack-more').click();
+  await expect(page.getByTestId('backpack-context-menu')).toBeVisible();
   await page.getByTestId('backpack-storage').click();
   await expect(page.getByTestId('backpack-placement-reason')).toHaveText(/uncovered|вне сумок/i);
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
 
   // Selling that exact bag also exercises the existing server rejection.
-  await page.getByTestId('backpack-more').click();
+  await expect(page.getByTestId('backpack-context-menu')).toBeVisible();
   await page.getByTestId('backpack-sell').click();
   await expect(page.getByTestId('error-notification')).toBeVisible();
-  await expect(page.getByTestId('backpack-more')).toBeVisible();
+  await expect(page.getByTestId('backpack-context-menu')).toBeVisible();
   await expect(page.locator('.active-bag-chip')).toHaveCount(1);
   const persisted = await api(request, player.sessionKey, '/api/bootstrap');
   expect(persisted.activeGameRun.loadoutItems).toEqual(rowsBeforeRefusal);
@@ -565,6 +567,13 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
     await anchor.click({ trial: true });
     await page.evaluate(() => window.scrollTo(0, 0));
     await assertImagesLoaded(page);
+    if (name === 'desktop') {
+      const [storageBox, backpackBox] = await Promise.all([
+        page.locator('[data-tutorial-anchor="storage"]').boundingBox(),
+        page.locator('.artifact-inventory-section').boundingBox()
+      ]);
+      expect(backpackBox.y - storageBox.y - storageBox.height).toBeLessThanOrEqual(14);
+    }
     await captureScreenshot(page, screenshotDir, `tutorial-above-shop-${name}.png`);
   }
 
@@ -601,7 +610,21 @@ test('[Flow G] first-run tutorial can be skipped and replayed once from settings
   await expect(storageItem).toBeVisible();
   await storageItem.click();
   await expect(popup).toContainText(/размести предмет|place your item/i);
-  await page.getByTestId('backpack-more').click();
+  await expect(page.getByTestId('backpack-sell')).toBeVisible();
+  const [coin, wins, menu] = await Promise.all([
+    page.locator('[data-tutorial-anchor="run-coins"]').boundingBox(), page.locator('.run-hud-progress').boundingBox(),
+    page.getByTestId('backpack-context-menu').boundingBox()
+  ]);
+  expect(coin.x + coin.width).toBeLessThanOrEqual(wins.x);
+  const hudBox = await page.locator('.run-hud').boundingBox();
+  const topbarBox = await page.locator('.prep-topbar').boundingBox();
+  expect(hudBox.width).toBeLessThan(topbarBox.width / 2);
+  expect(Math.abs(hudBox.x + hudBox.width - topbarBox.x - topbarBox.width)).toBeLessThan(2);
+  expect(menu.x).toBeGreaterThanOrEqual(0);
+  expect(menu.x + menu.width).toBeLessThanOrEqual(page.viewportSize().width);
+  expect(menu.y + menu.height).toBeLessThanOrEqual(page.viewportSize().height);
+  await captureScreenshot(page, screenshotDir, 'tutorial-context-menu.png', { preserveScroll: true, description: 'A selected Storage item opens its rounded context menu directly with Move, Rotate, Storage, Auto-place, priced Sell. The menu fits the viewport; coins are before Wins.' });
+  await expect(page.getByTestId('backpack-context-menu')).toBeVisible();
   await page.getByTestId('backpack-auto-place').click();
   await expect(popup).toContainText(/предметы сражаются сами|items fight automatically/i);
   await expect(popup).toContainText(/ещё один предмет|another item/i);

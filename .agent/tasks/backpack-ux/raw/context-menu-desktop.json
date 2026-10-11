@@ -1,6 +1,6 @@
 {
-  "screenshot": "drag-bag-desktop.png",
-  "description": "Desktop1280×800: held Moss Pouch art under pointer at4,4, grabbed by its second cell4,3. Snapped cells3,4 and4,4 show the target; Escape cancels without saving.",
+  "screenshot": "context-menu-desktop.png",
+  "description": "desktop: clicking an item in Storage opens Move, Rotate, Storage, Auto-place, priced Sell in a floating rounded menu. No persistent action rail; all menu edges are inside the viewport.",
   "viewport": {
     "width": 1280,
     "height": 800
