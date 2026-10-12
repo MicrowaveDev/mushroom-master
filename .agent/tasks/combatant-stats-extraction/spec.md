@@ -13,7 +13,7 @@ User request: «давай перенесем» after identifying combat stat ar
 
 ## Constraints and non-goals
 
-Catalogs, character identity, abilities, income, and balance policy stay product-owned. Existing stored replay snapshots are untouched. Placement and stale-code cleanup are excluded. Core is published before consumer changes. Mushroom uses its direct-to-main workflow; Meat updates PR #20; core PR remains for user merge.
+Catalogs, character identity, abilities, income, and balance policy stay product-owned. Existing stored replay snapshots are untouched. Placement and stale-code cleanup are excluded. Core is published before consumer changes. Mushroom uses its direct-to-main workflow; Meat opens extraction PR #22 after behavioral-fix PR #20 was merged; core PR remains for user merge.
 
 ## Verification
 

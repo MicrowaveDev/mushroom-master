@@ -8,3 +8,13 @@ Core commit: `fc619bdb3feb1b1a64fb731f250d3135c2d3e73c` ([core PR #24](https://g
 - AC4 PASS: `npm run verify:backpack-core` completed successfully with identical core pins; both builds, Meat's 16 browser tests, hosted/local deploy checks, and package verification passed. Raw command/result lines are retained in `raw/consumer-gate-summary.txt`.
 
 Fresh review checked current implementation and consumer configuration after the gate without changing production code. Saved replay snapshots are read as stored and require no migration. Verification establishes configured arithmetic parity, not identical balance between games. Screenshot checks were automated; this task changed no screen layout. Existing bundle-size advisories remain.
+
+
+## Delivery update
+
+Meat PR #20 merged before the extraction commit was pushed. Extraction delivery
+therefore uses [Meat PR #22](https://github.com/nuclear-pancakes/meat-master/pull/22)
+on `codex/shared-combatant-stats`, based on the merged main branch. Its tree is
+identical to the extraction tree verified above (`git diff f9f1d9a 7fea092` is
+empty), so the recorded checks still cover the delivered code. Core PR #24
+remains open for user merge; Mushroom consumes its published commit.
