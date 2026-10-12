@@ -1,0 +1,21 @@
+{
+  "coreCommit": "fc619bdb3feb1b1a64fb731f250d3135c2d3e73c",
+  "criteria": {
+    "AC1": {
+      "status": "PASS",
+      "proof": "Core combatant-stats.test.js; raw/consumer-gate-summary.txt: 521 tests, package dry-run."
+    },
+    "AC2": {
+      "status": "PASS",
+      "proof": "Meat src/game.js public facade configuration; existing signed-bonus regressions; raw/meat-stat-parity.txt."
+    },
+    "AC3": {
+      "status": "PASS",
+      "proof": "Core Mushroom port snapshot regression; raw/consumer-gate-summary.txt: 666 game tests and browser checks."
+    },
+    "AC4": {
+      "status": "PASS",
+      "proof": "Both gitlink pins fc619bdb3feb1b1a64fb731f250d3135c2d3e73c; raw/consumer-gate-summary.txt final success."
+    }
+  }
+}

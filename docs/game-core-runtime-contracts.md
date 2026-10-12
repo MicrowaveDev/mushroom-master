@@ -644,3 +644,14 @@ labels, `STEP_CAP`, `MAX_STUN_CHANCE`, and seeded RNG creation.
 
 Do not move Mushroom ids, names, base stats, artifact catalog data, rewards,
 rating, DB persistence, or battle replay storage into `backpack-game-core`.
+
+
+## Shared combatant stats
+
+`@microwavedev/backpack-game-core/modules/battle` exports `deriveCombatantStats`.
+It adds signed equipment bonuses before applying configured final stat limits.
+The legacy Mushroom battle port consumes this helper with base health unchanged,
+artifact-only stun chance, and its historical unclamped stat sums. Meat consumes
+it through the same public facade with explicit stat floors and positive
+armor-derived health. Catalogs, identity, abilities, and balance policy remain
+consumer configuration; saved battle snapshots are not recomputed.
