@@ -96,6 +96,11 @@ sudo app/scripts/operations/setup-nginx-production.sh --install --tls on
 
 The script defaults to proxying nginx to the Node app on `127.0.0.1:3021`. Use `--port <PORT>` if production runs the app on another port.
 
+The helper leaves HTTP/2 disabled to mitigate NGINX2Root (CVE-2026-123007).
+Enable it only after verifying that the host's nginx package contains the
+security fixes, such as upstream 1.30.7 / 1.31.9 or a confirmed distribution
+backport. See the [upstream security release](https://nginx.org/en/CHANGES-1.30).
+
 ## Docker Compose Setup
 
 ### Google sign-in

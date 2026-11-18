@@ -199,8 +199,9 @@ EOF
 EOF
     cat <<EOF
 server {
-  listen 443 ssl http2;
-  listen [::]:443 ssl http2;
+  # Keep HTTP/2 disabled until the host has verified NGINX2Root fixes.
+  listen 443 ssl;
+  listen [::]:443 ssl;
   server_name ${SERVER_NAMES};
 
   access_log /var/log/nginx/${SITE_NAME}.access.log;
